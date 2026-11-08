@@ -191,8 +191,9 @@ function shareImage(kind, format) {
 }
 function shareLink() {
   const r = state.reading;
-  const url = `${ORIGIN}/unse/r/${r.me.id}/`;
-  const text = `나는 ${r.me.name}일주 ${r.me.colorWord} ${r.me.animal}, 오늘 ${r.score}점! 너는?`;
+  // 받는 사람은 바로 자기 생일을 넣는 첫 화면으로 간다; 점수는 넣지 않는다(낮은 날에도 보낼 수 있게)
+  const url = `${ORIGIN}/unse/`;
+  const text = `나는 ${r.me.name}일주 ${r.me.colorWord} ${r.me.animal}! 너는 무슨 일주야? 생일만 넣으면 오늘의 운세 무료`;
   if (navigator.share) {
     navigator.share({ title: '오늘의 운세 · 1px', text, url }).catch((e) => { if (!e || e.name !== 'AbortError') copy(`${text}\n${url}`, '링크를 복사했어요'); });
     return;
@@ -412,6 +413,7 @@ async function show(birth, quick = false) {
   $('intro').hidden = true;
   $('friend').hidden = true;
   $('result').hidden = false;
+  $('who-birth').textContent = `${birth.y}.${String(birth.m).padStart(2, '0')}.${String(birth.d).padStart(2, '0')} ${birth.lunar ? '음력' : '양력'} 생일로 보는 중`;
   renderToday(r);
   selectTab('today');
   const flip = $('flip');
@@ -445,11 +447,9 @@ function init() {
     $('chour').append(new Option(h.label, h.key));
   }
 
+  // 다시 온 사람도 첫 화면(입력란)부터 본다: 저장된 생일을 채워 두고, '오늘 운세 뽑기' 한 번이면 오늘 카드가 열린다
   const saved = loadBirth();
   if (saved) {
-    $('again').hidden = false;
-    $('again').textContent = '저장된 생일로 바로 보기 →';
-    $('again').addEventListener('click', () => show(saved, true));
     $('birth').value = `${saved.y}${String(saved.m).padStart(2, '0')}${String(saved.d).padStart(2, '0')}`;
     state.calendar = saved.lunar ? 'lunar' : 'solar';
     setSeg('cal', state.calendar);
@@ -457,7 +457,6 @@ function init() {
     $('leap').checked = !!saved.leap;
     $('hour').value = saved.hour || '';
     $('gender').value = saved.gender || '';
-    if (!document.body.dataset.friend) show(saved, true);
   }
 
   document.querySelectorAll('[data-cal]').forEach((b) => b.addEventListener('click', () => {
@@ -501,6 +500,13 @@ function init() {
   $('copy').addEventListener('click', () => copy(`${shareText(state.reading)}\n${SITE}`, '텍스트를 복사했어요'));
   $('sheet-close').addEventListener('click', () => { $('sheet').hidden = true; });
   $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) $('sheet').hidden = true; });
+  // 저장된 생일로 바로 열린 사람도 입력란으로 돌아간다(저장은 새 생일을 넣을 때 바뀐다)
+  $('change').addEventListener('click', () => {
+    $('result').hidden = true;
+    $('intro').hidden = false;
+    window.scrollTo({ top: 0 });
+    $('birth').focus();
+  });
   $('reset').addEventListener('click', () => {
     clearBirth();
     state.birth = null;

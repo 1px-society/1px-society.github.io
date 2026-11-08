@@ -1,0 +1,125 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>video cards</title>
+<link rel="stylesheet" href="/unse/css/fonts.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>body{margin:0;background:#222;display:flex;flex-wrap:wrap;gap:8px;padding:8px}canvas{width:200px}</style>
+<script type="module">
+  // 영상(블록월드) 속 손에 드는 '오늘의 운세' 카드와 그 장면의 소품 화면. 운세 페이지와 같은 픽셀 동물·폰트·색.
+  //   node tools/video-screens.mjs <projects/<id>/assets/photos> video-cards.html
+  import { drawSprite, drawLogo, PALETTES } from '/unse/js/sprites.js';
+  import { pillar } from '/unse/js/saju.js';
+  const INK = '#2a2440';
+  const PIXEL = '"Galmuri11", "Pretendard Variable", monospace';
+  const SANS = '"Pretendard Variable", Pretendard, sans-serif';
+  const CW = 540, CH = 750;   // 카드 앞면(부품 photo의 안쪽 칸 비율 0.72)
+
+  function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  // 한국어는 낱말 단위로 줄을 바꾼다
+  function wrap(ctx, text, max) {
+    const out = []; let line = '';
+    for (const word of text.split(' ')) { const t = line ? `${line} ${word}` : word; if (ctx.measureText(t).width <= max) line = t; else { if (line) out.push(line); line = word; } }
+    if (line) out.push(line); return out;
+  }
+
+  // 운세 카드: to(받는 사람), index(받는 사람의 일주 60갑자 번호), line(카드 문구, \n에서 줄을 바꾼다, 비우면 빈 카드), date
+  function card({ to, index, line, date }) {
+    const c = document.createElement('canvas'); c.width = CW; c.height = CH; const ctx = c.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, CW * 0.5, CH); g.addColorStop(0, '#f3ecff'); g.addColorStop(0.55, '#ffe7f0'); g.addColorStop(1, '#fff3cf');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
+    // 머리: 로고 + 오늘의 운세 + 날짜
+    drawLogo(ctx, 34, 34, 4.2);
+    ctx.fillStyle = INK; ctx.font = `700 38px ${PIXEL}`; ctx.textBaseline = 'middle'; ctx.fillText('오늘의 운세', 92, 62);
+    ctx.font = `400 22px ${PIXEL}`; ctx.fillStyle = '#6b6488'; ctx.textAlign = 'right'; ctx.fillText(date, CW - 34, 64); ctx.textAlign = 'left';
+    ctx.strokeStyle = 'rgba(42,36,64,0.18)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(34, 112); ctx.lineTo(CW - 34, 112); ctx.stroke();
+    // 받는 사람의 일주 배지
+    const p = pillar(index); const pal = PALETTES[p.element];
+    ctx.fillStyle = pal.l; ctx.beginPath(); ctx.arc(104, 196, 58, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+    drawSprite(ctx, p.branch, p.element, 104 - 48, 196 - 46, 6);
+    ctx.fillStyle = INK; ctx.font = `800 46px ${SANS}`; ctx.fillText(`To. ${to}`, 186, 176);
+    ctx.font = `700 26px ${PIXEL}`; ctx.fillStyle = '#6b6488'; ctx.fillText(`${p.name}일주 · ${p.colorWord} ${p.animal}`, 188, 222);
+    // 카드 문구(크게) 또는 빈 줄
+    const box = { x: 34, y: 290, w: CW - 68, h: 340 };
+    ctx.fillStyle = 'rgba(255,255,255,0.78)'; rr(ctx, box.x, box.y, box.w, box.h, 28); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+    if (line) {
+      ctx.fillStyle = INK; ctx.textAlign = 'center';
+      let size = 64; let lines;
+      do { ctx.font = `800 ${size}px ${SANS}`; lines = line.split('\n').flatMap((part) => wrap(ctx, part, box.w - 50)); size -= 4; } while ((lines.length > line.split('\n').length || lines.length * size * 1.3 > box.h - 50) && size > 30);
+      size += 4; const lh = size * 1.32; let y = box.y + box.h / 2 - ((lines.length - 1) * lh) / 2;
+      for (const l of lines) { ctx.fillText(l, CW / 2, y); y += lh; }
+      ctx.textAlign = 'left';
+    } else {
+      ctx.strokeStyle = 'rgba(42,36,64,0.3)'; ctx.setLineDash([10, 10]); ctx.lineWidth = 3;
+      for (let k = 0; k < 3; k++) { const y = box.y + 100 + k * 90; ctx.beginPath(); ctx.moveTo(box.x + 40, y); ctx.lineTo(box.x + box.w - 40, y); ctx.stroke(); }
+      ctx.setLineDash([]);
+    }
+    // 아래: 하루 한 장
+    ctx.fillStyle = '#6b6488'; ctx.font = `700 24px ${PIXEL}`; ctx.textAlign = 'center'; ctx.fillText('하루 한 장 · 적힌 대로 이루어져요', CW / 2, CH - 70); ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    return c;
+  }
+
+  // 검사 결과지(종이, 의사가 보여 준다)
+  function result() {
+    const W = 540, H = 720; const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#1f5fa8'; ctx.fillRect(0, 0, W, 96);
+    ctx.fillStyle = '#ffffff'; ctx.font = `800 44px ${SANS}`; ctx.fillText('검사 결과지', 36, 64);
+    const rows = ['혈액 검사', '영상 검사', '종양 표지자', '간 기능'];
+    ctx.font = `700 34px ${SANS}`;
+    rows.forEach((r, i) => {
+      const y = 170 + i * 82;
+      ctx.fillStyle = '#2a2440'; ctx.fillText(r, 40, y);
+      ctx.fillStyle = '#22b07d'; ctx.textAlign = 'right'; ctx.fillText('정상', W - 40, y); ctx.textAlign = 'left';
+      ctx.strokeStyle = '#e4e6ec'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(40, y + 30); ctx.lineTo(W - 40, y + 30); ctx.stroke();
+    });
+    ctx.save(); ctx.translate(W / 2, 590); ctx.rotate(-0.08);
+    ctx.strokeStyle = '#d7263d'; ctx.lineWidth = 8; rr(ctx, -200, -62, 400, 124, 18); ctx.stroke();
+    ctx.fillStyle = '#d7263d'; ctx.font = `900 60px ${SANS}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('모두 정상', 0, 4);
+    ctx.restore();
+    return c;
+  }
+
+  // 사무실 모니터: 업무 목록(남은 일) → 업무 완료
+  function work(done, time) {
+    const W = 1280, H = 740; const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d');
+    ctx.fillStyle = '#f4f6fa'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#2b3446'; ctx.fillRect(0, 0, W, 84);
+    ctx.fillStyle = '#ffffff'; ctx.font = `800 40px ${SANS}`; ctx.fillText('업무 목록', 40, 56);
+    ctx.font = `800 46px ${SANS}`; ctx.textAlign = 'right'; ctx.fillText(time, W - 40, 58); ctx.textAlign = 'left';
+    const rows = ['견적서 수정', '주간 보고서', '회의록 정리', '거래처 회신 메일', '내일 발표 자료'];
+    rows.forEach((r, i) => {
+      const y = 150 + i * 110;
+      ctx.fillStyle = '#ffffff'; rr(ctx, 40, y - 50, W - 80, 90, 16); ctx.fill();
+      ctx.fillStyle = '#2a2440'; ctx.font = `700 42px ${SANS}`; ctx.fillText(r, 80, y + 8);
+      ctx.fillStyle = done ? '#22b07d' : '#e8455a'; rr(ctx, W - 300, y - 30, 220, 56, 28); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.font = `800 34px ${SANS}`; ctx.textAlign = 'center'; ctx.fillText(done ? '완료' : '남음', W - 190, y + 10); ctx.textAlign = 'left';
+    });
+    if (done) {
+      ctx.fillStyle = 'rgba(34,176,125,0.96)'; rr(ctx, W / 2 - 300, H / 2 - 90, 600, 180, 36); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.font = `900 88px ${SANS}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('업무 완료', W / 2, H / 2 + 4);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    }
+    return c;
+  }
+
+  const cards = {
+    card_1: { to: '은경', index: 21, line: '오늘은\n잘못을 인정한다', date: '11월 13일 금' },
+    card_2: { to: '태훈', index: 2, line: '오늘은 좋아하는\n사람에게 고백받고\n좋다고 답한다', date: '11월 14일 토' },
+    card_3: { to: '혜진', index: 3, line: '오늘은\n다시 시작하자고\n말한다', date: '11월 15일 일' },
+    card_4: { to: '엄마', index: 1, line: '오늘은\n아픈 곳이 다 낫는다', date: '11월 16일 월' },
+    card_5: { to: '나', index: 16, line: '오늘은 남은 일이\n금방 끝나고 푹 쉰다', date: '11월 16일 월' },
+    card_5_blank: { to: '나', index: 16, line: '', date: '11월 16일 월' },
+  };
+  const texts = Object.values(cards).map((d) => `${d.to} ${d.line.replace('\n', ' ')} ${d.date}`).join(' ')
+    + ' 오늘의 운세 To. 일주 · 하루 한 장 적힌 대로 이루어져요 갑을병정무기경신임계자축인묘진사오미신유술해 쥐소호랑이토끼용뱀말양원숭이닭개돼지 푸른 붉은 노란 하얀 검은'
+    + ' 검사 결과지 혈액 영상 종양 표지자 간 기능 정상 모두 업무 목록 견적서 수정 주간 보고서 회의록 정리 거래처 회신 메일 내일 발표 자료 완료 남음 21:40 21:44 0123456789';
+  await Promise.all([document.fonts.load(`800 56px "Pretendard Variable"`, texts), document.fonts.load(`700 34px Galmuri11`, texts), document.fonts.load(`400 24px Galmuri11`, texts)]);
+  const out = {};
+  for (const [k, d] of Object.entries(cards)) out[k] = card(d);
+  out.result_ok = result();
+  out.work_todo = work(false, '21:40');
+  out.work_done = work(true, '21:44');
+  window.SCREENS = Object.fromEntries(Object.entries(out).map(([k, cv]) => { document.body.append(cv); return [k, cv.toDataURL('image/png')]; }));
+  document.body.dataset.ready = '1';
+</script>
