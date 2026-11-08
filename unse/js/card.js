@@ -100,6 +100,24 @@ function drawRating(ctx, kind, n, x, y, px, gap) {
   for (let i = 0; i < 5; i++) drawIcon(ctx, kind, x + i * (7 * px + gap), y, px, i < n ? ICON_COLORS[kind] : '#ddd7ee');
 }
 
+// 바닥줄: 1px 로고, 계정, 주소를 로고 얼굴의 세로 가운데에 맞춘다
+function drawFooter(ctx, L, R, fy) {
+  const size = 5;
+  const top = fy - 34;
+  drawLogo(ctx, L - 6, top, size);
+  const mid = top + 5 * size;   // 로고 얼굴(1~8줄)의 가운데
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK;
+  ctx.font = `700 26px ${PIXEL}`;
+  ctx.fillText('@1px' + '.society', L + 52, mid + 1);
+  ctx.textAlign = 'right';
+  ctx.font = `400 24px ${PIXEL}`;
+  ctx.fillStyle = '#6b6488';
+  ctx.fillText(SITE, R, mid + 1);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
 // 반짝이(픽셀 별) 배경
 function sparkles(ctx, w, h, seed, color, count) {
   let s = seed >>> 0 || 1;
@@ -268,15 +286,7 @@ function drawFeed(ctx, r, withBackground = true) {
 
   // 바닥줄
   const fy = H - M - 10 - 56;
-  drawLogo(ctx, L - 6, fy - 30, 5);
-  ctx.fillStyle = INK;
-  ctx.font = `700 26px ${PIXEL}`;
-  ctx.fillText('@1px.society', L + 52, fy);
-  ctx.textAlign = 'right';
-  ctx.font = `400 24px ${PIXEL}`;
-  ctx.fillStyle = '#6b6488';
-  ctx.fillText(SITE, R, fy);
-  ctx.textAlign = 'left';
+  drawFooter(ctx, L, R, fy);
 }
 
 export function renderCard(r, format = 'feed') {
@@ -449,15 +459,7 @@ function drawCompatFeed(ctx, c, a, b, withBackground = true) {
   }
 
   const fy = H - M - 10 - 56;
-  drawLogo(ctx, L - 6, fy - 30, 5);
-  ctx.fillStyle = INK;
-  ctx.font = `700 26px ${PIXEL}`;
-  ctx.fillText('@1px.society', L + 52, fy);
-  ctx.textAlign = 'right';
-  ctx.font = `400 24px ${PIXEL}`;
-  ctx.fillStyle = '#6b6488';
-  ctx.fillText(SITE, R, fy);
-  ctx.textAlign = 'left';
+  drawFooter(ctx, L, R, fy);
 }
 
 export function renderCompatCard(c, a, b, format = 'feed') {
