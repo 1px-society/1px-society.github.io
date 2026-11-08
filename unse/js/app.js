@@ -4,7 +4,7 @@ import {
   HANJA_STEMS, HANJA_BRANCHES, STEMS, BRANCHES, STEM_ELEMENT, BRANCH_ELEMENT,
 } from './saju.js';
 import { reading, dateLabel, shareText, calendar, nowPeriods, compat, life, daeunReading } from './fortune.js';
-import { renderCard, ensureFonts, cardTexts, SITE } from './card.js';
+import { renderCard, renderCompatCard, ensureFonts, cardTexts, compatTexts, SITE } from './card.js';
 import { drawLogo, drawSprite } from './sprites.js';
 import { TAGLINE, ELEMENT_LABEL } from './data.js';
 import { barChart, lineChart, scoreBars } from './charts.js';
@@ -17,7 +17,7 @@ const GOD_HANJA = { 비견: '比肩', 겁재: '劫財', 식신: '食神', 상관
 const ELEMENT_COLORS = ['#52c48a', '#ff6b6b', '#ffd24d', '#c9ced8', '#2f3456'];
 const SIJIN = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
 
-const state = { calendar: 'solar', ccalendar: 'solar', format: 'story', reading: null, chart: null, birth: null, images: {}, rendered: {} };
+const state = { calendar: 'solar', ccalendar: 'solar', format: 'story', cformat: 'story', reading: null, chart: null, birth: null, compat: null, images: {}, rendered: {} };
 
 // --- 공통 ---------------------------------------------------------------------------
 function el(tag, props = {}, ...children) {
@@ -126,31 +126,39 @@ function renderHint(node, hint) {
   if (hint.link) node.append(el('a', { href: hint.link.href, textContent: hint.link.label }));
 }
 
-async function image(format) {
-  if (state.images[format]) return state.images[format];
-  const canvas = renderCard(state.reading, format);
+// kind: 'today'(오늘의 운세 카드) | 'compat'(궁합 카드)
+async function image(kind, format) {
+  const key = `${kind}:${format}`;
+  if (state.images[key]) return state.images[key];
+  let canvas;
+  if (kind === 'compat') {
+    await ensureFonts(compatTexts(state.compat.c, state.chart, state.compat.other));
+    canvas = renderCompatCard(state.compat.c, state.chart, state.compat.other, format);
+  } else {
+    canvas = renderCard(state.reading, format);
+  }
   const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/png'));
-  state.images[format] = { blob, url: URL.createObjectURL(blob) };
-  return state.images[format];
+  state.images[key] = { blob, url: URL.createObjectURL(blob) };
+  return state.images[key];
 }
-function fileName(format) {
+function fileName(kind, format) {
   const [y, m, d] = state.reading.date;
-  return `1px-unse-${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}-${format}.png`;
+  return `1px-${kind === 'compat' ? 'gunghap' : 'unse'}-${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}-${format}.png`;
 }
-async function openSheet(format) {
-  const img = await image(format);
+async function openSheet(kind, format) {
+  const img = await image(kind, format);
   $('sheet-img').src = img.url;
   $('download').href = img.url;
-  $('download').download = fileName(format);
+  $('download').download = fileName(kind, format);
   $('sheet').hidden = false;
 }
-async function shareImage() {
-  const img = await image(state.format);
-  const file = new File([img.blob], fileName(state.format), { type: 'image/png' });
+async function shareImage(kind, format) {
+  const img = await image(kind, format);
+  const file = new File([img.blob], fileName(kind, format), { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file] }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
   }
-  await openSheet(state.format);
+  await openSheet(kind, format);
 }
 async function shareLink() {
   const r = state.reading;
@@ -240,8 +248,17 @@ function renderPeriod() {
 // --- 궁합 탭 ------------------------------------------------------------------------
 function renderCompat(other) {
   const c = compat(state.chart, other);
+  state.compat = { c, other };
+  delete state.images['compat:story'];
+  delete state.images['compat:feed'];
   const box = $('compat-result');
   box.hidden = false;
+  const fmt = (value, label) => el('button', {
+    type: 'button', className: `seg-btn${state.cformat === value ? ' on' : ''}`, textContent: label,
+    onclick: (e) => { state.cformat = value; e.target.parentNode.querySelectorAll('.seg-btn').forEach((b) => b.classList.toggle('on', b === e.target)); },
+  });
+  const preview = el('img', { className: 'compat-card', alt: '궁합 카드' });
+  image('compat', 'feed').then((img) => { preview.src = img.url; });
   box.replaceChildren(
     el('h2', { textContent: '우리 궁합' }),
     el('div', { className: 'phead' },
@@ -250,7 +267,12 @@ function renderCompat(other) {
       el('span', { className: 'pgrade', textContent: c.label })),
     el('p', { className: 'soft small', textContent: `나 ${state.chart.day.name}일주(${state.chart.day.colorWord} ${state.chart.day.animal}) × 상대 ${other.day.name}일주(${other.day.colorWord} ${other.day.animal})` }),
     ...c.sections.map((s) => el('div', { className: 'csec' }, el('h3', { textContent: s.title }), el('p', { textContent: s.text }))),
-    el('button', { className: 'btn btn-ghost small', type: 'button', textContent: '궁합 결과 텍스트 복사', onclick: () => copy(`💞 우리 궁합 ${c.score}점 · ${c.label}\n${state.chart.day.name}일주 × ${other.day.name}일주\n${SITE}`, '궁합 결과를 복사했어요') }),
+    preview,
+    el('div', { className: 'seg', role: 'radiogroup' }, fmt('story', '스토리용'), fmt('feed', '댓글·피드용')),
+    el('button', { className: 'btn btn-main', type: 'button', textContent: '궁합 카드 공유하기 ♥', onclick: () => shareImage('compat', state.cformat) }),
+    el('div', { className: 'row' },
+      el('button', { className: 'btn btn-sub', type: 'button', textContent: '이미지 저장', onclick: () => openSheet('compat', state.cformat) }),
+      el('button', { className: 'btn btn-sub', type: 'button', textContent: '텍스트 복사', onclick: () => copy(`💞 우리 궁합 ${c.score}점 · ${c.label}\n${state.chart.day.name}일주 × ${other.day.name}일주\n${c.short.map(([k, v]) => `${k}: ${v}`).join('\n')}\n${SITE}`, '궁합 결과를 복사했어요') })),
   );
   box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -427,8 +449,8 @@ function init() {
     renderCompat(other);
   });
 
-  $('share').addEventListener('click', shareImage);
-  $('save').addEventListener('click', () => openSheet(state.format));
+  $('share').addEventListener('click', () => shareImage('today', state.format));
+  $('save').addEventListener('click', () => openSheet('today', state.format));
   $('link').addEventListener('click', shareLink);
   $('copy').addEventListener('click', () => copy(`${shareText(state.reading)}\n${SITE}`, '텍스트를 복사했어요'));
   $('sheet-close').addEventListener('click', () => { $('sheet').hidden = true; });

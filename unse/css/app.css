@@ -201,3 +201,7 @@ body {
 .csec p { margin: 4px 0 0; line-height: 1.6; }
 .notes li.now { background: #ffd1e0; font-weight: 700; }
 .stage { margin-top: 6px; }
+
+.compat-card { display: block; width: 100%; border-radius: 18px; margin: 16px 0 14px; }
+#compat-result .seg { margin-top: 4px; }
+#compat-result .row { margin-top: 12px; }
