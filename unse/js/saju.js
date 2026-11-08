@@ -158,7 +158,8 @@ export function fourPillars({ y, m, d, lunar = false, leap = false, hour = null 
   }
   const h = HOURS.find((x) => x.key === hour) || null;
   const minutes = h ? h.minutes : 12 * 60;
-  const lambda = sunLongitude(kstToJD(sy, sm, sd, minutes));
+  const jd = kstToJD(sy, sm, sd, minutes);
+  const lambda = sunLongitude(jd);
 
   // 연주: 입춘(황경 315°) 전이면 전해
   let sajuYear = sy;
@@ -174,7 +175,7 @@ export function fourPillars({ y, m, d, lunar = false, leap = false, hour = null 
   const dayP = pillar(dayPillarIndex(dy, dm, dd));
 
   const hourP = h ? pillarOf(((dayP.stem % 5) * 2 + h.branch) % 10, h.branch) : null;
-  return { solar: [sy, sm, sd], year: yearP, month: monthP, day: dayP, hour: hourP, lambda };
+  return { solar: [sy, sm, sd], year: yearP, month: monthP, day: dayP, hour: hourP, lambda, jd };
 }
 
 // --- 원국 풀이: 십신, 오행 분포, 신강·신약, 용신 ---------------------------------------
@@ -277,4 +278,78 @@ export function relation(a, b) {
   if (SIX_HARMONY.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) return 'harmony';
   if (a !== b && THREE_HARMONY.some((g) => g.includes(a) && g.includes(b))) return 'trio';
   return 'none';
+}
+
+// --- 12신살(연지 삼합 기준), 원진, 천간합 -------------------------------------------
+
+export const SINSAL12 = ['겁살', '재살', '천살', '지살', '년살', '월살', '망신살', '장성살', '반안살', '역마살', '육해살', '화개살'];
+const HWAGAE_OF = (b) => ([8, 0, 4].includes(b) ? 4 : [2, 6, 10].includes(b) ? 10 : [5, 9, 1].includes(b) ? 1 : 7);
+// 기준 지지(보통 연지)에서 본 그 지지의 12신살
+export function sinsal12(base, branch) {
+  return SINSAL12[(branch - (HWAGAE_OF(base) + 1) + 24) % 12];
+}
+
+// 원진: 子未 丑午 寅酉 卯申 辰亥 巳戌
+const WONJIN = [[0, 7], [1, 6], [2, 9], [3, 8], [4, 11], [5, 10]];
+export function isWonjin(a, b) {
+  return WONJIN.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+}
+
+// 천간합: 甲己 乙庚 丙辛 丁壬 戊癸
+export function stemsCombine(a, b) {
+  return Math.abs(a - b) === 5;
+}
+
+// 오늘의 시진 12개(자시부터): 오늘 일간으로 시간의 천간을 정한다
+export function hourPillarsOf(dayStem) {
+  return HOURS.slice(1).map((h) => ({ ...h, pillar: pillarOf(((dayStem % 5) * 2 + h.branch) % 10, h.branch) }));
+}
+
+// 지금 이 순간(한국 시각)의 월주·연주
+export function monthYearNow(now = Date.now()) {
+  const t = new Date(now + 9 * 3600000);
+  const [y, m, d] = [t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()];
+  const minutes = t.getUTCHours() * 60 + t.getUTCMinutes();
+  const lambda = sunLongitude(kstToJD(y, m, d, minutes));
+  let sajuYear = y;
+  if (m <= 2 && lambda >= 270 && lambda < 315) sajuYear -= 1;
+  const yearP = pillar((((sajuYear - 4) % 60) + 60) % 60);
+  const k = Math.floor((((lambda - 315) % 360) + 360) % 360 / 30);
+  const monthP = pillarOf(((yearP.stem % 5) * 2 + 2 + k) % 10, (2 + k) % 12);
+  return { year: yearP, month: monthP, sajuYear };
+}
+
+export function yearPillar(sajuYear) {
+  return pillar((((sajuYear - 4) % 60) + 60) % 60);
+}
+
+export const ELEMENT_OF = { stem: (s) => STEM_ELEMENT[s], branch: (b) => BRANCH_ELEMENT[b] };
+
+// --- 대운: 순행(양남·음녀)은 다음 절기, 역행(음남·양녀)은 지난 절기까지의 날수 ÷ 3 = 대운이 시작되는 나이 ---
+function termIndex(jd) {
+  return Math.floor((((sunLongitude(jd) - 15) % 360) + 360) % 360 / 30);
+}
+function nextTermJD(jd, dir) {
+  const k = termIndex(jd);
+  let a = jd;
+  let b = jd + dir * 0.5;
+  for (let i = 0; i < 80 && termIndex(b) === k; i++) { a = b; b += dir * 0.5; }
+  for (let i = 0; i < 40; i++) {
+    const mid = (a + b) / 2;
+    if (termIndex(mid) === k) a = mid; else b = mid;
+  }
+  return b;
+}
+export function daeun(chart, gender) {
+  if (!gender || !chart.jd) return null;
+  const yangYear = chart.year.stem % 2 === 0;
+  const forward = (yangYear && gender === 'M') || (!yangYear && gender === 'F');
+  const days = Math.abs(nextTermJD(chart.jd, forward ? 1 : -1) - chart.jd);
+  const startAge = Math.max(1, Math.round(days / 3));
+  const list = [];
+  for (let i = 1; i <= 10; i++) {
+    const idx = (((chart.month.index + (forward ? i : -i)) % 60) + 60) % 60;
+    list.push({ age: startAge + (i - 1) * 10, pillar: pillar(idx) });
+  }
+  return { forward, startAge, list };
 }

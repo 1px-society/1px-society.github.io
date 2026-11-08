@@ -7,6 +7,7 @@
     "build": "node tools/build.mjs"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "korean-lunar-calendar": "^0.4.0",
     "lunar-javascript": "^1.7.7",
     "playwright-core": "^1.64.1"

@@ -28,7 +28,7 @@ export async function ensureFonts(texts) {
 }
 
 export function cardTexts(r) {
-  return [r.headline, r.tagline, r.love.text, r.money.text, r.work.text, r.mantra, r.keyword, r.lucky.item, r.lucky.color.name, r.lucky.direction, r.god, r.stage, r.today.name, ...r.shinsal, '比肩劫財食神傷官偏財正財偏官正官偏印正印',
+  return [r.headline, r.tagline, r.love.text, r.money.text, r.work.text, r.health.text, r.grade, String(r.score), '오늘 점수 점 건강 12운성', r.mantra, r.keyword, r.lucky.item, r.lucky.color.name, r.lucky.direction, r.god, r.stage, r.today.name, ...r.shinsal, '比肩劫財食神傷官偏財正財偏官正官偏印正印',
     `${r.me.name}일주 ${r.me.colorWord} ${r.me.animal} 오늘의 운세 연애 재물 공부·일 행운 컬러 방향 숫자 아이템 오늘은 의 날 일 한마디 ${dateLabel(r.date)} ${SITE} @1px.society 나의 너도 봐 케미 띠 친구 0123456789`];
 }
 
@@ -86,8 +86,9 @@ const ICONS = {
   heart: ['.xx.xx.', 'xxxxxxx', 'xxxxxxx', '.xxxxx.', '..xxx..', '...x...', '.......'],
   coin: ['..xxx..', '.xxxxx.', 'xxx.xxx', 'xxx.xxx', 'xxx.xxx', '.xxxxx.', '..xxx..'],
   star: ['...x...', '..xxx..', 'xxxxxxx', '.xxxxx.', '..xxx..', '.xx.xx.', 'xx...xx'],
+  plus: ['..xxx..', '..xxx..', 'xxxxxxx', 'xxxxxxx', 'xxxxxxx', '..xxx..', '..xxx..'],
 };
-const ICON_COLORS = { heart: '#ff5c8a', coin: '#ffb627', star: '#7c5cff' };
+const ICON_COLORS = { heart: '#ff5c8a', coin: '#ffb627', star: '#7c5cff', plus: '#22b07d' };
 
 function drawIcon(ctx, kind, x, y, px, color) {
   const g = ICONS[kind];
@@ -146,20 +147,19 @@ function drawFeed(ctx, r, withBackground = true) {
   // 머리줄
   ctx.fillStyle = INK;
   ctx.textBaseline = 'alphabetic';
-  ctx.font = `700 44px ${PIXEL}`;
   ctx.textAlign = 'left';
+  ctx.font = `700 44px ${PIXEL}`;
   ctx.fillText('오늘의 운세', L, M + 96);
   ctx.font = `400 30px ${PIXEL}`;
   ctx.textAlign = 'right';
   ctx.fillText(`${dateLabel(r.date)} · ${r.today.name}일`, R, M + 94);
   ctx.textAlign = 'left';
-  // 픽셀 점선
   ctx.fillStyle = '#cfc7e6';
   for (let x = L; x < R; x += 20) ctx.fillRect(x, M + 124, 10, 6);
 
-  // 일주 배지: 동물 스티커 + 이름
+  // 일주 배지
   const sy = M + 160;
-  const disc = 236;
+  const disc = 200;
   ctx.fillStyle = pal.l;
   ctx.beginPath();
   ctx.arc(L + disc / 2, sy + disc / 2, disc / 2, 0, Math.PI * 2);
@@ -167,103 +167,107 @@ function drawFeed(ctx, r, withBackground = true) {
   ctx.lineWidth = 6;
   ctx.strokeStyle = INK;
   ctx.stroke();
-  drawSprite(ctx, r.me.branch, r.me.element, L + (disc - 192) / 2, sy + (disc - 192) / 2 + 4, 12);
+  drawSprite(ctx, r.me.branch, r.me.element, L + (disc - 160) / 2, sy + (disc - 160) / 2 + 4, 10);
 
-  const tx = L + disc + 40;
-  ctx.font = `700 28px ${PIXEL}`;
+  const tx = L + disc + 36;
+  ctx.font = `700 26px ${PIXEL}`;
   let cx = tx;
   const chips = [[`#${r.keyword}`, pal.b, r.me.element === 4 ? '#ffffff' : INK], ...r.shinsal.slice(0, 2).map((x) => [x, '#ffe27a', INK])];
   for (const [label, fill, color] of chips) {
-    const w = ctx.measureText(label).width + 32;
+    const w = ctx.measureText(label).width + 30;
     if (cx + w > R) break;
-    sticker(ctx, cx, sy + 8, w, 50, 25, fill, 5, 4);
+    sticker(ctx, cx, sy + 2, w, 46, 23, fill, 5, 4);
     ctx.fillStyle = color;
-    ctx.fillText(label, cx + 16, sy + 43);
-    cx += w + 14;
+    ctx.fillText(label, cx + 15, sy + 35);
+    cx += w + 12;
   }
   ctx.fillStyle = INK;
-  ctx.font = `700 60px ${PIXEL}`;
-  ctx.fillText(`${r.me.name}일주`, tx, sy + 136);
-  ctx.font = `700 34px ${SANS}`;
-  ctx.fillText(`${r.me.colorWord} ${r.me.animal}`, tx, sy + 186);
-  ctx.font = `600 28px ${SANS}`;
+  ctx.font = `700 56px ${PIXEL}`;
+  ctx.fillText(`${r.me.name}일주`, tx, sy + 116);
+  ctx.font = `700 32px ${SANS}`;
+  ctx.fillText(`${r.me.colorWord} ${r.me.animal}`, tx, sy + 160);
+  ctx.font = `600 26px ${SANS}`;
   ctx.fillStyle = '#6b6488';
-  ctx.fillText(`오늘은 ${r.god}(${GOD_HANJA[r.god]})의 날 · ${r.stage}`, tx, sy + 228);
+  ctx.fillText(`오늘은 ${r.god}(${GOD_HANJA[r.god]})의 날 · 12운성 ${r.stage}`, tx, sy + 196);
 
-  // 아래부터 자리를 잡는다: 바닥줄, 행운 칩, 분야별 세 줄. 남는 칸에 한 줄 운세와 총운을 가운데 놓는다.
-  const fy = H - M - 10 - 64;
-  const chipY = fy - 64 - 118;
-  const rowsY = chipY - 22 - 3 * 110;
-
-  ctx.font = `800 62px ${SANS}`;
-  let lines = wrap(ctx, `“${r.headline}”`, R - L, 1);
-  let lh = 80;
-  if (ctx.measureText(`“${r.headline}”`).width > R - L) {
-    ctx.font = `800 54px ${SANS}`;
-    lines = wrap(ctx, `“${r.headline}”`, R - L, 2);
-    lh = 68;
-  }
-  const font = ctx.font;
-  const top = sy + disc + 24;
-  const block = lines.length * lh + 20 + 44;
-  let y = top + Math.max(0, (rowsY - 16 - top - block) / 2) + lh - 14;
+  // 점수 + 한 줄 운세
+  const y0 = sy + disc + 34;
+  sticker(ctx, L - 4, y0, 262, 200, 32, pal.l, 8, 5);
   ctx.fillStyle = INK;
+  ctx.textAlign = 'center';
+  ctx.font = `700 26px ${PIXEL}`;
+  ctx.fillText('오늘 점수', L + 127, y0 + 44);
+  ctx.textAlign = 'left';
+  ctx.font = `700 112px ${PIXEL}`;
+  const nw = ctx.measureText(String(r.score)).width;
+  ctx.font = `700 30px ${PIXEL}`;
+  const uw = ctx.measureText('점').width;
+  const sx = L + 127 - (nw + 8 + uw) / 2;
+  ctx.font = `700 112px ${PIXEL}`;
+  ctx.fillText(String(r.score), sx, y0 + 150);
+  ctx.font = `700 30px ${PIXEL}`;
+  ctx.fillText('점', sx + nw + 8, y0 + 148);
+  ctx.textAlign = 'center';
+  ctx.font = `700 26px ${PIXEL}`;
+  ctx.fillText(r.grade, L + 127, y0 + 186);
+  ctx.textAlign = 'left';
+
+  const hx = L + 290;
+  ctx.font = `800 46px ${SANS}`;
+  const lines = wrap(ctx, `“${r.headline}”`, R - hx, 3);
+  const lh = 58;
+  let y = y0 + 100 - ((lines.length - 1) * lh) / 2 + 14;
   for (const line of lines) {
-    ctx.font = font;
-    ctx.fillText(line, L, y);
+    ctx.fillText(line, hx, y);
     y += lh;
   }
-  y += 4;
-  ctx.font = `700 30px ${PIXEL}`;
-  ctx.fillText('총운', L, y + 4);
-  drawRating(ctx, 'star', r.total, L + 100, y - 30, 6, 12);
 
-  // 분야별
-  y = rowsY;
-  const rows = [['연애', 'heart', r.love], ['재물', 'coin', r.money], ['공부·일', 'star', r.work]];
+  // 분야별 네 줄
+  y = y0 + 234;
+  const rows = [['연애', 'heart', r.love], ['재물', 'coin', r.money], ['공부·일', 'star', r.work], ['건강', 'plus', r.health]];
   for (const [label, kind, v] of rows) {
     ctx.fillStyle = '#f4f0ff';
-    roundRect(ctx, L - 6, y, R - L + 12, 96, 24);
+    roundRect(ctx, L - 6, y, R - L + 12, 82, 22);
     ctx.fill();
     ctx.fillStyle = INK;
-    ctx.font = `700 30px ${PIXEL}`;
-    ctx.fillText(label, L + 22, y + 42);
-    drawRating(ctx, kind, v.stars, L + 22, y + 56, 4, 8);
+    ctx.font = `700 28px ${PIXEL}`;
+    ctx.fillText(label, L + 20, y + 36);
+    drawRating(ctx, kind, v.stars, L + 20, y + 50, 3, 7);
     ctx.fillStyle = INK;
-    ctx.font = `600 31px ${SANS}`;
-    const t = wrap(ctx, v.text, R - L - 250, 2);
-    const ty = t.length === 1 ? y + 60 : y + 42;
-    t.forEach((line, i) => ctx.fillText(line, L + 230, ty + i * 38));
-    y += 110;
+    ctx.font = `600 29px ${SANS}`;
+    const t = wrap(ctx, v.text, R - L - 240, 2);
+    const ty = t.length === 1 ? y + 52 : y + 36;
+    t.forEach((line, i) => ctx.fillText(line, L + 210, ty + i * 34));
+    y += 92;
   }
 
   // 행운 칩
-  y = chipY;
+  y += 6;
   const luck = [['행운 컬러', r.lucky.color.name, r.lucky.color.hex], ['행운 방향', r.lucky.direction], ['행운 숫자', String(r.lucky.number)]];
   const cw = (R - L - 24) / 3;
   luck.forEach(([label, value, hex], i) => {
-    const cx = L + i * (cw + 12);
-    sticker(ctx, cx, y, cw, 118, 24, '#ffffff', 6, 4);
+    const bx = L + i * (cw + 12);
+    sticker(ctx, bx, y, cw, 108, 24, '#ffffff', 6, 4);
     ctx.fillStyle = '#6b6488';
     ctx.font = `400 24px ${PIXEL}`;
-    ctx.fillText(label, cx + 20, y + 40);
+    ctx.fillText(label, bx + 20, y + 38);
     ctx.fillStyle = INK;
-    ctx.font = `800 34px ${SANS}`;
-    let vx = cx + 20;
+    ctx.font = `800 32px ${SANS}`;
+    let vx = bx + 20;
     if (hex) {
       ctx.fillStyle = hex;
-      ctx.fillRect(vx, y + 64, 30, 30);
+      ctx.fillRect(vx, y + 60, 28, 28);
       ctx.lineWidth = 3;
       ctx.strokeStyle = INK;
-      ctx.strokeRect(vx, y + 64, 30, 30);
-      vx += 42;
+      ctx.strokeRect(vx, y + 60, 28, 28);
+      vx += 40;
       ctx.fillStyle = INK;
     }
-    const v = wrap(ctx, value, cw - (vx - cx) - 14, 1)[0];
-    ctx.fillText(v, vx, y + 92);
+    ctx.fillText(wrap(ctx, value, cw - (vx - bx) - 14, 1)[0], vx, y + 86);
   });
 
   // 바닥줄
+  const fy = H - M - 10 - 56;
   drawLogo(ctx, L - 6, fy - 30, 5);
   ctx.fillStyle = INK;
   ctx.font = `700 26px ${PIXEL}`;
