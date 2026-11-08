@@ -1,0 +1,46 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ig assets</title>
+<link rel="stylesheet" href="/unse/css/fonts.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>body{margin:0;background:#222;display:flex;gap:10px;padding:10px}canvas{width:300px}</style>
+<script type="module">
+  // 인스타 홍보 스토리(1080×1920)와 하이라이트 커버(1080×1920, 가운데 원이 보인다). 웹·API로 올린 스토리는 링크 스티커가 없어서 프로필 링크로 안내한다.
+  import { fourPillars, todayKST } from '/unse/js/saju.js';
+  import { reading } from '/unse/js/fortune.js';
+  import { renderCard, ensureFonts, cardTexts } from '/unse/js/card.js';
+  import { drawSprite, drawLogo } from '/unse/js/sprites.js';
+  const INK = '#2a2440';
+  const PIXEL = '"Galmuri11", "Pretendard Variable", monospace';
+  const SANS = '"Pretendard Variable", Pretendard, sans-serif';
+  const r = reading(fourPillars({ y: 2001, m: 7, d: 2, hour: 'o' }), todayKST());
+  await ensureFonts([...cardTexts(r), '오늘의 운세 무료 사주 생일만 넣으면 오늘 점수 궁합 대운까지 프로필 링크에서 내 운세 보기 @1px.society']);
+
+  function bg(ctx) {
+    const g = ctx.createLinearGradient(0, 0, 400, 1920); g.addColorStop(0, '#f3ecff'); g.addColorStop(0.55, '#ffe7f0'); g.addColorStop(1, '#e3f6ff');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 1080, 1920);
+  }
+  // 1) 홍보 스토리: 위 제목, 가운데 예시 카드(기울임), 아래 링크 스티커 자리
+  const story = document.createElement('canvas'); story.width = 1080; story.height = 1920;
+  let ctx = story.getContext('2d'); bg(ctx);
+  ctx.fillStyle = INK; ctx.textAlign = 'center';
+  ctx.font = `700 120px ${PIXEL}`; ctx.fillText('오늘의 운세', 540, 330);
+  ctx.font = `800 52px ${SANS}`; ctx.fillText('생일만 넣으면 무료 사주', 540, 420);
+  ctx.font = `600 40px ${SANS}`; ctx.fillStyle = '#6b6488'; ctx.fillText('오늘 점수 · 궁합 · 대운까지', 540, 480);
+  const card = renderCard(r, 'feed');
+  ctx.save(); ctx.translate(540, 1050); ctx.rotate(-0.05); ctx.drawImage(card, -1080 * 0.36, -1350 * 0.36, 1080 * 0.72, 1350 * 0.72); ctx.restore();
+  ctx.fillStyle = INK; ctx.font = `700 46px ${PIXEL}`; ctx.fillText('프로필 링크에서 내 운세 보기', 540, 1620);
+  ctx.font = `600 36px ${SANS}`; ctx.fillStyle = '#6b6488'; ctx.fillText('@1px.society', 540, 1690);
+  ctx.textAlign = 'left';
+  // 2) 하이라이트 커버: 가운데에 1px 로고와 '운세'
+  const cover = document.createElement('canvas'); cover.width = 1080; cover.height = 1920;
+  ctx = cover.getContext('2d');
+  ctx.fillStyle = '#f7d35a'; ctx.fillRect(0, 0, 1080, 1920);
+  drawSprite(ctx, 4, 3, 540 - 200, 960 - 300, 25);
+  ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.font = `700 120px ${PIXEL}`; ctx.fillText('운세', 540, 1230);
+  ctx.textAlign = 'left';
+  document.body.append(story, cover);
+  window.ASSETS = { 'ig-story-unse': story.toDataURL('image/png'), 'ig-highlight-cover': cover.toDataURL('image/png') };
+  window.SCREENS = window.ASSETS;   // tools/video-screens.mjs <dir> ig-assets.html saves them
+  document.body.dataset.ready = '1';
+</script>
