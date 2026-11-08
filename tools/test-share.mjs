@@ -143,6 +143,25 @@ const toastText = (p) => p.evaluate(() => document.getElementById('toast').class
   await ctx.close();
 }
 
+// 9) 폰(터치)에서 공유가 거부돼 저장 창이 뜨면: 버튼은 '사진에 저장'이고 누르면 공유창(이미지 저장)이 다시 열린다
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: engine === 'chromium', hasTouch: true });
+  await ctx.addInitScript(shareMock('deny'));
+  const p = await ctx.newPage();
+  await p.goto(`${BASE}/unse/`, { waitUntil: 'networkidle' });
+  await p.fill('#birth', '20050315');
+  await p.tap('#go');
+  await p.waitForTimeout(3000);
+  await p.tap('#share');
+  await p.waitForTimeout(500);
+  const label = await p.evaluate(() => ({ text: document.getElementById('download').textContent, hidden: document.getElementById('download').hidden }));
+  await p.tap('#download');
+  await p.waitForTimeout(300);
+  const c = await calls(p);
+  check('폰 저장 창: 사진에 저장 → 공유창', label.text === '사진에 저장' && !label.hidden && c.length === 2 && c[1].files.length === 1, `${JSON.stringify(label)} calls=${c.length}`);
+  await ctx.close();
+}
+
 // 8) 다시 온 사람: 입력란이 먼저 뜨고 저장된 생일이 채워져 있다; 결과 위 '생일 바꾸기'로 입력란에 돌아간다
 {
   const { ctx, p } = await page('ok');
