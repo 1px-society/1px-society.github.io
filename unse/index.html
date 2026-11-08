@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>오늘의 운세 · 1px</title>
-<meta name="description" content="생일 하나로 보는 나의 일주와 오늘의 운세. 결과 카드를 스토리와 댓글에 바로 공유해 봐.">
+<meta name="description" content="생년월일시로 사주팔자를 뽑고, 오늘 일진과의 관계로 보는 진짜 오늘의 운세. 결과 카드를 스토리와 댓글에 바로 공유해 봐.">
 <meta name="theme-color" content="#f3ecff">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="1px · 오늘의 운세">
 <meta property="og:title" content="오늘의 운세 · 1px">
-<meta property="og:description" content="생일 하나로 보는 나의 일주와 오늘의 운세">
+<meta property="og:description" content="사주팔자로 보는 진짜 오늘의 운세">
 <meta property="og:image" content="https://1px-society.github.io/unse/og/default.png">
 <meta property="og:url" content="https://1px-society.github.io/unse/">
 <meta name="twitter:card" content="summary_large_image">
@@ -33,13 +33,12 @@
   <section id="friend" class="friend" hidden>
     <p class="friend-kicker">친구의 일주는</p>
     <div class="friend-badge"><canvas id="friend-sprite" width="96" height="96" aria-hidden="true"></canvas><div><strong id="friend-name"></strong><span id="friend-tag"></span></div></div>
-    <img id="friend-card" class="friend-card" alt="친구의 오늘 운세 카드" hidden>
     <a class="btn btn-main" href="#intro">나도 오늘 운세 보기</a>
   </section>
 
   <section id="intro" class="intro">
     <h1 class="title">오늘의<br>운세</h1>
-    <p class="lead">생일 하나로 보는 <b>나의 일주</b>와 오늘 하루</p>
+    <p class="lead">생년월일시로 뽑는 <b>나의 사주팔자</b>와 오늘 하루</p>
 
     <form id="form" class="panel" novalidate>
       <div class="seg" role="radiogroup" aria-label="달력">
@@ -52,7 +51,10 @@
       </label>
       <p id="birth-help" class="help">예) 2005년 3월 15일 → 20050315</p>
       <label class="check" id="leap-row" hidden><input type="checkbox" id="leap"> 윤달이에요</label>
-      <label class="check"><input type="checkbox" id="late"> 밤 11시 반~자정 사이에 태어났어요</label>
+      <label class="field">
+        <span class="field-label">태어난 시간 <span class="opt">(알면 더 정확해요)</span></span>
+        <select id="hour" class="select"><option value="">모름</option></select>
+      </label>
       <p id="error" class="error" role="alert"></p>
       <button class="btn btn-main" id="go" type="submit">오늘 운세 뽑기 ✦</button>
       <p class="privacy">생일은 이 폰에만 저장돼요. 어디로도 보내지 않아요.</p>
@@ -86,13 +88,27 @@
 
     <div class="panel more">
       <h2>오늘의 흐름</h2>
+      <p class="gloss" id="gloss"></p>
       <p id="detail"></p>
-      <p id="relation" class="soft"></p>
+      <ul class="notes" id="notes"></ul>
       <dl class="facts">
-        <div><dt>오늘의 한마디</dt><dd id="mantra"></dd></div>
-        <div><dt>오늘 케미 좋은 띠</dt><dd id="match"></dd></div>
-        <div><dt>오늘의 기운</dt><dd id="todaypillar"></dd></div>
+        <div><dt>행운의 시간</dt><dd id="luckytime"></dd></div>
+        <div><dt>행운 아이템</dt><dd id="luckyitem"></dd></div>
+        <div><dt>오늘의 조언</dt><dd id="mantra"></dd></div>
       </dl>
+    </div>
+
+    <div class="panel chart">
+      <h2>내 사주 원국</h2>
+      <table class="pillars" id="pillars" aria-label="사주팔자"></table>
+      <p class="soft small" id="hour-missing" hidden>태어난 시간을 넣으면 시주까지 볼 수 있어요.</p>
+      <h3>오행 분포</h3>
+      <div class="bars" id="bars"></div>
+      <p id="strength"></p>
+      <p id="yong"></p>
+      <h3>나는 어떤 사람?</h3>
+      <p id="ilgan"></p>
+      <ul class="notes" id="natal"></ul>
     </div>
 
     <div class="panel next">

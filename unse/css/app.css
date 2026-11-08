@@ -136,3 +136,35 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .sky, .flip, .flip.shake, .result { animation: none !important; transition: none !important; }
 }
+
+/* 사주 원국 */
+.opt { font-weight: 400; color: var(--soft); font-family: var(--sans); font-size: 12px; }
+.select { width: 100%; font: 700 16px var(--sans); color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 12px; margin-top: 2px; appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 22px) 52%, calc(100% - 16px) 52%; background-size: 6px 6px; background-repeat: no-repeat; }
+.chart h2, .more h2 { margin: 0 0 10px; font: 700 18px var(--pixel); }
+.chart h3 { margin: 18px 0 8px; font: 700 15px var(--pixel); }
+.pillars { width: 100%; border-collapse: separate; border-spacing: 6px; table-layout: fixed; }
+.pillars th { font: 700 12px var(--pixel); color: var(--soft); padding: 0; }
+.pillars td { text-align: center; padding: 0; }
+.pillars .god { font: 700 11px var(--pixel); color: var(--soft); height: 18px; }
+.cell { display: grid; place-items: center; aspect-ratio: 1; border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+.cell b { font: 800 26px/1 "Noto Serif KR", "Apple SD Gothic Neo", serif; }
+.cell small { font: 700 11px var(--pixel); margin-top: -6px; }
+.cell.empty { background: repeating-linear-gradient(45deg, #f1edf9 0 6px, #fff 6px 12px); box-shadow: none; border-style: dashed; color: #b9b1d0; }
+.me-cell { outline: 3px solid var(--main); outline-offset: 2px; }
+.e0 { background: #52c48a; color: #0f2b1d; }
+.e1 { background: #ff6b6b; color: #3a0d10; }
+.e2 { background: #ffd24d; color: #3a2a06; }
+.e3 { background: #eef0f5; color: #2a2440; }
+.e4 { background: #2f3456; color: #ffffff; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 64px 1fr 34px; align-items: center; gap: 8px; font: 700 13px var(--pixel); }
+.bar-track { height: 16px; background: #f1edf9; border-radius: 8px; overflow: hidden; border: 2px solid var(--ink); }
+.bar-fill { height: 100%; }
+.bar-n { text-align: right; color: var(--soft); }
+.chart p { margin: 10px 0 0; line-height: 1.6; }
+.small { font-size: 13px; }
+.gloss { font-weight: 700; }
+.notes { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.notes li { background: #fff8db; border: 2px solid var(--ink); border-radius: 12px; padding: 10px 12px; font-size: 14px; line-height: 1.55; }

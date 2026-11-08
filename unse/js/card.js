@@ -7,6 +7,7 @@ export const PIXEL = '"Galmuri11", "Pretendard Variable", monospace';
 export const SITE = '1px-society.github.io/unse';
 
 const INK = '#2a2440';
+const GOD_HANJA = { 비견: '比肩', 겁재: '劫財', 식신: '食神', 상관: '傷官', 편재: '偏財', 정재: '正財', 편관: '偏官', 정관: '正官', 편인: '偏印', 정인: '正印' };
 const THEMES = [
   ['#c6f4e6', '#e6e0ff'], // 목
   ['#ffd3d6', '#ffe8c6'], // 화
@@ -27,8 +28,8 @@ export async function ensureFonts(texts) {
 }
 
 export function cardTexts(r) {
-  return [r.headline, r.tagline, r.love.text, r.money.text, r.work.text, r.mantra, r.keyword, r.lucky.item, r.lucky.color.name,
-    `${r.me.name}일주 ${r.me.colorWord} ${r.me.animal} 오늘의 운세 연애 돈 공부·일 행운 컬러 아이템 숫자 한마디 ${dateLabel(r.date)} ${SITE} @1px.society 나의 너도 봐 케미 띠 친구 0123456789`];
+  return [r.headline, r.tagline, r.love.text, r.money.text, r.work.text, r.mantra, r.keyword, r.lucky.item, r.lucky.color.name, r.lucky.direction, r.god, r.stage, r.today.name, ...r.shinsal, '比肩劫財食神傷官偏財正財偏官正官偏印正印',
+    `${r.me.name}일주 ${r.me.colorWord} ${r.me.animal} 오늘의 운세 연애 재물 공부·일 행운 컬러 방향 숫자 아이템 오늘은 의 날 일 한마디 ${dateLabel(r.date)} ${SITE} @1px.society 나의 너도 봐 케미 띠 친구 0123456789`];
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -150,7 +151,7 @@ function drawFeed(ctx, r, withBackground = true) {
   ctx.fillText('오늘의 운세', L, M + 96);
   ctx.font = `400 30px ${PIXEL}`;
   ctx.textAlign = 'right';
-  ctx.fillText(dateLabel(r.date), R, M + 94);
+  ctx.fillText(`${dateLabel(r.date)} · ${r.today.name}일`, R, M + 94);
   ctx.textAlign = 'left';
   // 픽셀 점선
   ctx.fillStyle = '#cfc7e6';
@@ -169,20 +170,25 @@ function drawFeed(ctx, r, withBackground = true) {
   drawSprite(ctx, r.me.branch, r.me.element, L + (disc - 192) / 2, sy + (disc - 192) / 2 + 4, 12);
 
   const tx = L + disc + 40;
-  ctx.font = `700 30px ${PIXEL}`;
-  const kw = `#${r.keyword}`;
-  const kwW = ctx.measureText(kw).width + 36;
-  sticker(ctx, tx, sy + 12, kwW, 52, 26, pal.b, 5, 4);
-  ctx.fillStyle = r.me.element === 4 ? '#ffffff' : INK;
-  ctx.fillText(kw, tx + 18, sy + 49);
+  ctx.font = `700 28px ${PIXEL}`;
+  let cx = tx;
+  const chips = [[`#${r.keyword}`, pal.b, r.me.element === 4 ? '#ffffff' : INK], ...r.shinsal.slice(0, 2).map((x) => [x, '#ffe27a', INK])];
+  for (const [label, fill, color] of chips) {
+    const w = ctx.measureText(label).width + 32;
+    if (cx + w > R) break;
+    sticker(ctx, cx, sy + 8, w, 50, 25, fill, 5, 4);
+    ctx.fillStyle = color;
+    ctx.fillText(label, cx + 16, sy + 43);
+    cx += w + 14;
+  }
   ctx.fillStyle = INK;
   ctx.font = `700 60px ${PIXEL}`;
-  ctx.fillText(`${r.me.name}일주`, tx, sy + 140);
+  ctx.fillText(`${r.me.name}일주`, tx, sy + 136);
   ctx.font = `700 34px ${SANS}`;
-  ctx.fillText(`${r.me.colorWord} ${r.me.animal}`, tx, sy + 190);
-  ctx.font = `500 28px ${SANS}`;
+  ctx.fillText(`${r.me.colorWord} ${r.me.animal}`, tx, sy + 186);
+  ctx.font = `600 28px ${SANS}`;
   ctx.fillStyle = '#6b6488';
-  ctx.fillText(r.tagline, tx, sy + 232);
+  ctx.fillText(`오늘은 ${r.god}(${GOD_HANJA[r.god]})의 날 · ${r.stage}`, tx, sy + 228);
 
   // 아래부터 자리를 잡는다: 바닥줄, 행운 칩, 분야별 세 줄. 남는 칸에 한 줄 운세와 총운을 가운데 놓는다.
   const fy = H - M - 10 - 64;
@@ -214,7 +220,7 @@ function drawFeed(ctx, r, withBackground = true) {
 
   // 분야별
   y = rowsY;
-  const rows = [['연애', 'heart', r.love], ['돈', 'coin', r.money], ['공부·일', 'star', r.work]];
+  const rows = [['연애', 'heart', r.love], ['재물', 'coin', r.money], ['공부·일', 'star', r.work]];
   for (const [label, kind, v] of rows) {
     ctx.fillStyle = '#f4f0ff';
     roundRect(ctx, L - 6, y, R - L + 12, 96, 24);
@@ -233,9 +239,9 @@ function drawFeed(ctx, r, withBackground = true) {
 
   // 행운 칩
   y = chipY;
-  const chips = [['행운 컬러', r.lucky.color.name, r.lucky.color.hex], ['행운 아이템', r.lucky.item], ['행운 숫자', String(r.lucky.number)]];
+  const luck = [['행운 컬러', r.lucky.color.name, r.lucky.color.hex], ['행운 방향', r.lucky.direction], ['행운 숫자', String(r.lucky.number)]];
   const cw = (R - L - 24) / 3;
-  chips.forEach(([label, value, hex], i) => {
+  luck.forEach(([label, value, hex], i) => {
     const cx = L + i * (cw + 12);
     sticker(ctx, cx, y, cw, 118, 24, '#ffffff', 6, 4);
     ctx.fillStyle = '#6b6488';

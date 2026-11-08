@@ -5,13 +5,17 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>body{margin:0;padding:12px;background:#222;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}canvas{width:360px;height:auto}</style>
 <script type="module">
-  import { pillar, dayPillarIndex } from '/unse/js/saju.js';
+  import { fourPillars } from '/unse/js/saju.js';
   import { reading } from '/unse/js/fortune.js';
   import { renderCard, renderOg, ensureFonts, cardTexts } from '/unse/js/card.js';
   const q = new URLSearchParams(location.search);
-  const births = (q.get('b') || '2005-3-15,2001-7-2,1998-12-24').split(',');
+  // b=2005-3-15-o,2001-7-2,1998-12-24-hae  (마지막 칸은 시진 키, 없으면 시 모름)
+  const births = (q.get('b') || '2005-3-15-o,2001-7-2,1998-12-24-hae').split(',');
   const date = (q.get('d') || '2026-11-8').split('-').map(Number);
-  const rs = births.map((b) => reading(pillar(dayPillarIndex(...b.split('-').map(Number))), date));
+  const rs = births.map((b) => {
+    const [y, m, d, hour] = b.split('-');
+    return reading(fourPillars({ y: +y, m: +m, d: +d, hour: hour || null }), date);
+  });
   await ensureFonts(rs.flatMap(cardTexts));
   for (const r of rs) document.body.append(renderCard(r, q.get('f') || 'feed'));
   if (q.get('og')) document.body.append(renderOg(rs[0].me, rs[0].tagline), renderOg(null));

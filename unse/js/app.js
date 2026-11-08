@@ -1,12 +1,15 @@
 import KoreanLunarCalendar from '../vendor/korean-lunar-calendar.mjs';
-import { birthPillar, pillarById, pillar, dayPillarIndex, todayKST, msUntilNextKSTMidnight, isValidSolar } from './saju.js';
+import { fourPillars, HOURS, pillarById, pillar, dayPillarIndex, todayKST, msUntilNextKSTMidnight, isValidSolar, tenGod, branchGod, HANJA_STEMS, HANJA_BRANCHES, STEMS, BRANCHES, STEM_ELEMENT, BRANCH_ELEMENT } from './saju.js';
 import { reading, dateLabel, shareText } from './fortune.js';
 import { renderCard, ensureFonts, cardTexts, SITE } from './card.js';
 import { drawLogo, drawSprite } from './sprites.js';
-import { TAGLINE } from './data.js';
+import { TAGLINE, ILGAN_TEXT, NATAL_SHINSAL_TEXT, ELEMENT_LABEL } from './data.js';
 
 const $ = (id) => document.getElementById(id);
-const KEY = 'unse.v1';
+const KEY = 'unse.v2';
+const OLD_KEY = 'unse.v1';
+const GOD_HANJA = { 비견: '比肩', 겁재: '劫財', 식신: '食神', 상관: '傷官', 편재: '偏財', 정재: '正財', 편관: '偏官', 정관: '正官', 편인: '偏印', 정인: '正印' };
+const ELEMENT_COLORS = ['#52c48a', '#ff6b6b', '#ffd24d', '#c9ced8', '#2f3456'];
 const ORIGIN = 'https://1px-society.github.io';
 
 const state = { calendar: 'solar', format: 'story', reading: null, images: {} };
@@ -15,7 +18,10 @@ const state = { calendar: 'solar', format: 'story', reading: null, images: {} };
 function loadBirth() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || 'null');
-    return v && typeof v.y === 'number' ? v : null;
+    if (v && typeof v.y === 'number') return v;
+    const old = JSON.parse(localStorage.getItem(OLD_KEY) || 'null');
+    if (old && typeof old.y === 'number') return { y: old.y, m: old.m, d: old.d, lunar: !!old.lunar, leap: !!old.leap, hour: old.lateNight ? 'ja-late' : null };
+    return null;
   } catch {
     return null;
   }
@@ -123,8 +129,7 @@ function fileName(format) {
 }
 
 function resultLink() {
-  const [y, m, d] = state.reading.date;
-  return `${ORIGIN}/unse/r/${state.reading.me.id}/?d=${y}-${m}-${d}`;
+  return `${ORIGIN}/unse/r/${state.reading.me.id}/`;
 }
 
 async function openSheet(format) {
@@ -178,14 +183,101 @@ async function copy(text, done) {
   }
 }
 
+function listInto(el, items) {
+  el.replaceChildren(...items.map((t) => {
+    const li = document.createElement('li');
+    li.textContent = t;
+    return li;
+  }));
+}
+
+function renderFlow(r) {
+  $('gloss').textContent = `오늘은 ${r.today.name}(${HANJA_STEMS[r.today.stem]}${HANJA_BRANCHES[r.today.branch]})일. 나에게는 ${r.god}(${GOD_HANJA[r.god]})의 날 — ${r.gloss}.`;
+  $('detail').textContent = r.detail;
+  listInto($('notes'), r.notes);
+  $('luckytime').textContent = r.lucky.time;
+  $('luckyitem').textContent = r.lucky.item;
+  $('mantra').textContent = r.mantra;
+}
+
+function cell(text, hanja, element, extra = '') {
+  const td = document.createElement('td');
+  const div = document.createElement('div');
+  div.className = `cell e${element} ${extra}`;
+  const b = document.createElement('b');
+  b.textContent = hanja;
+  const small = document.createElement('small');
+  small.textContent = text;
+  div.append(b, small);
+  td.append(div);
+  return td;
+}
+
+function renderChart(r) {
+  const c = r.chart;
+  const me = c.day.stem;
+  const cols = [['시주', c.hour], ['일주', c.day], ['월주', c.month], ['연주', c.year]];
+  const table = $('pillars');
+  table.replaceChildren();
+  const row = (fn) => {
+    const tr = document.createElement('tr');
+    for (const [label, p] of cols) tr.append(fn(label, p));
+    table.append(tr);
+  };
+  row((label) => Object.assign(document.createElement('th'), { textContent: label }));
+  row((label, p) => Object.assign(document.createElement('td'), { className: 'god', textContent: p ? (label === '일주' ? '나' : tenGod(me, p.stem)) : '' }));
+  row((label, p) => (p ? cell(STEMS[p.stem], HANJA_STEMS[p.stem], STEM_ELEMENT[p.stem], label === '일주' ? 'me-cell' : '') : emptyCell()));
+  row((label, p) => (p ? cell(BRANCHES[p.branch], HANJA_BRANCHES[p.branch], BRANCH_ELEMENT[p.branch]) : emptyCell()));
+  row((label, p) => Object.assign(document.createElement('td'), { className: 'god', textContent: p ? branchGod(me, p.branch) : '' }));
+  $('hour-missing').hidden = !!c.hour;
+
+  const info = r.info;
+  const bars = $('bars');
+  bars.replaceChildren(...info.counts.map((n, e) => {
+    const div = document.createElement('div');
+    div.className = 'bar';
+    const name = document.createElement('span');
+    name.textContent = ELEMENT_LABEL[e];
+    const track = document.createElement('span');
+    track.className = 'bar-track';
+    const fill = document.createElement('span');
+    fill.className = 'bar-fill';
+    fill.style.display = 'block';
+    fill.style.width = `${Math.round((n / info.total) * 100)}%`;
+    fill.style.background = ELEMENT_COLORS[e];
+    track.append(fill);
+    const num = document.createElement('span');
+    num.className = 'bar-n';
+    num.textContent = `${n}개`;
+    div.append(name, track, num);
+    return div;
+  }));
+  const em = STEM_ELEMENT[me];
+  $('strength').textContent = info.strong
+    ? `일간 ${ELEMENT_LABEL[em]}을 돕는 기운이 많은 신강(身強) 사주예요. 힘이 넘치니 내보내고 쓰는 기운이 필요해요.`
+    : `일간 ${ELEMENT_LABEL[em]}을 돕는 기운이 적은 신약(身弱) 사주예요. 나를 받쳐 주는 기운이 필요해요.`;
+  $('yong').textContent = `그래서 나에게 필요한 기운(용신)은 ${ELEMENT_LABEL[info.yong]}. 행운의 색·방향·숫자·시간은 여기서 나와요.`;
+  $('ilgan').textContent = ILGAN_TEXT[me];
+  listInto($('natal'), r.natal.length ? r.natal.map((s) => NATAL_SHINSAL_TEXT[s]) : ['원국에 큰 신살은 없어요. 무난하고 균형 잡힌 타입이에요.']);
+}
+
+function emptyCell() {
+  const td = document.createElement('td');
+  const div = document.createElement('div');
+  div.className = 'cell empty';
+  div.textContent = '?';
+  td.append(div);
+  return td;
+}
+
 async function show(birth, quick = false) {
-  const me = birthPillar(birth, lunarToSolar);
-  if (!me) {
+  const chart = fourPillars(birth, lunarToSolar);
+  if (!chart) {
     $('error').textContent = '없는 음력 날짜야. 윤달 여부를 확인해 줘';
     return;
   }
   state.birth = birth;
-  const r = reading(me, todayKST());
+  const r = reading(chart, todayKST());
   state.reading = r;
   state.images = {};
   await ensureFonts(cardTexts(r));
@@ -207,11 +299,8 @@ async function show(birth, quick = false) {
   flip.classList.remove('shake');
   flip.classList.add('open');
 
-  $('detail').textContent = r.detail;
-  $('relation').textContent = r.relationNote;
-  $('mantra').textContent = r.mantra;
-  $('match').textContent = `${r.match}띠 친구`;
-  $('todaypillar').textContent = `${r.today.name}일 · ${r.today.colorWord} ${r.today.animal}`;
+  renderFlow(r);
+  renderChart(r);
   renderHint($('inapp'), inAppHint());
   setTimeout(() => { $('result').hidden = false; }, quick ? 300 : 800);
 }
@@ -225,21 +314,12 @@ function friendView() {
   drawSprite($('friend-sprite').getContext('2d'), me.branch, me.element, 0, 0, 6);
   $('friend-name').textContent = `${me.name}일주`;
   $('friend-tag').textContent = `${me.colorWord} ${me.animal} · ${TAGLINE[me.name]}`;
-  const d = new URLSearchParams(location.search).get('d');
-  const parts = d ? d.split('-').map(Number) : null;
-  if (parts && parts.length === 3 && isValidSolar(...parts)) {
-    const r = reading(me, parts);
-    ensureFonts(cardTexts(r)).then(() => {
-      $('friend-card').src = renderCard(r, 'feed').toDataURL('image/png');
-      $('friend-card').hidden = false;
-      $('friend-card').alt = `친구의 ${dateLabel(parts)} 운세 카드`;
-    });
-  }
 }
 
 function init() {
   drawStatic();
   friendView();
+  for (const h of HOURS) $('hour').append(new Option(h.label, h.key));
 
   const saved = loadBirth();
   if (saved) {
@@ -251,7 +331,7 @@ function init() {
     setSeg('cal', state.calendar);
     $('leap-row').hidden = !saved.lunar;
     $('leap').checked = !!saved.leap;
-    $('late').checked = !!saved.lateNight;
+    $('hour').value = saved.hour || '';
     if (!document.body.dataset.friend) show(saved, true);
   }
 
@@ -273,7 +353,7 @@ function init() {
       $('error').textContent = p.error;
       return;
     }
-    const birth = { ...p, lunar: state.calendar === 'lunar', leap: state.calendar === 'lunar' && $('leap').checked, lateNight: $('late').checked };
+    const birth = { ...p, lunar: state.calendar === 'lunar', leap: state.calendar === 'lunar' && $('leap').checked, hour: $('hour').value || null };
     saveBirth(birth);
     show(birth);
   });
