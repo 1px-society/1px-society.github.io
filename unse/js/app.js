@@ -151,14 +151,34 @@ function prepareImages(kind) {
   for (const format of ['story', 'feed']) image(kind, format).catch(() => {});
 }
 
+// 저장 창의 버튼: 컴퓨터는 파일 내려받기. 폰은 a[download]가 사진첩에 넣지 못하니(아이폰은 '파일' 앱, 앱 안 브라우저는 막힘)
+// 공유창을 띄워 '이미지 저장'을 고르게 하고, 공유창도 없으면 버튼을 숨겨 꾹 눌러 저장하게 한다.
+let sheetFile = null;
 function showSheetImage(img, kind, format) {
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const file = new File([img.blob], fileName(kind, format), { type: 'image/png' });
+  const canFile = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] }));
+  const btn = $('download');
   $('sheet-title').textContent = '이미지를 꾹 눌러서 저장해 줘';
   $('sheet-img').hidden = false;
   $('sheet-text').hidden = true;
-  $('download').hidden = false;
   $('sheet-img').src = img.url;
-  $('download').href = img.url;
-  $('download').download = fileName(kind, format);
+  if (!touch) {
+    sheetFile = null;
+    btn.hidden = false;
+    btn.textContent = '파일로 저장';
+    btn.href = img.url;
+    btn.download = fileName(kind, format);
+  } else if (canFile) {
+    sheetFile = file;
+    btn.hidden = false;
+    btn.textContent = '사진에 저장';
+    btn.removeAttribute('download');
+    btn.href = '#';
+  } else {
+    sheetFile = null;
+    btn.hidden = true;
+  }
   $('sheet').hidden = false;
 }
 function openSheet(kind, format) {
@@ -498,6 +518,11 @@ function init() {
   $('save').addEventListener('click', () => openSheet('today', state.format));
   $('link').addEventListener('click', shareLink);
   $('copy').addEventListener('click', () => copy(`${shareText(state.reading)}\n${SITE}`, '텍스트를 복사했어요'));
+  $('download').addEventListener('click', (e) => {
+    if (!sheetFile) return;   // 컴퓨터: a[download]가 내려받는다
+    e.preventDefault();
+    navigator.share({ files: [sheetFile] }).catch(() => { /* 닫았거나 막힘: 꾹 눌러 저장 안내가 떠 있다 */ });
+  });
   $('sheet-close').addEventListener('click', () => { $('sheet').hidden = true; });
   $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) $('sheet').hidden = true; });
   // 저장된 생일로 바로 열린 사람도 입력란으로 돌아간다(저장은 새 생일을 넣을 때 바뀐다)
