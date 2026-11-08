@@ -62,7 +62,7 @@ const toastText = (p) => p.evaluate(() => document.getElementById('toast').class
   await p.waitForTimeout(300);
   c = await calls(p);
   const last = c[c.length - 1];
-  check('링크 보내기: 결과 링크 URL로 공유', last && /^https:\/\/1px-society\.github\.io\/unse\/r\/[a-z]+-[a-z]+\/$/.test(last.url) && /일주/.test(last.text), JSON.stringify(last));
+  check('링크 보내기: 첫 화면 URL로 공유, 문구에 일주(점수 없음)', last && last.url === 'https://1px-society.github.io/unse/' && /일주/.test(last.text) && !/점/.test(last.text), JSON.stringify(last));
   check('오류 없음', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -79,7 +79,7 @@ const toastText = (p) => p.evaluate(() => document.getElementById('toast').class
   await p.waitForTimeout(500);
   const t = await toastText(p);
   const s2 = await sheet(p);
-  check('공유 거부: 링크는 복사되거나 복사 창이 뜸', t === '링크를 복사했어요' || (s2.open && /unse\/r\//.test(s2.text || '')), `toast=${t} sheet=${JSON.stringify(s2)}`);
+  check('공유 거부: 링크는 복사되거나 복사 창이 뜸', t === '링크를 복사했어요' || (s2.open && /1px-society\.github\.io\/unse\//.test(s2.text || '')), `toast=${t} sheet=${JSON.stringify(s2)}`);
   await ctx.close();
 }
 
@@ -104,7 +104,7 @@ const toastText = (p) => p.evaluate(() => document.getElementById('toast').class
   const t = await toastText(p);
   let clip = '';
   if (engine === 'chromium') clip = await p.evaluate(() => navigator.clipboard.readText()).catch(() => '');
-  check('공유 없음: 링크가 클립보드로', t === '링크를 복사했어요' && (engine !== 'chromium' || /1px-society\.github\.io\/unse\/r\//.test(clip)), `toast=${t} clip=${clip}`);
+  check('공유 없음: 링크가 클립보드로', t === '링크를 복사했어요' && (engine !== 'chromium' || /1px-society\.github\.io\/unse\//.test(clip)), `toast=${t} clip=${clip}`);
   await ctx.close();
 }
 
@@ -140,6 +140,23 @@ const toastText = (p) => p.evaluate(() => document.getElementById('toast').class
   await p.waitForTimeout(800);
   const v = await p.evaluate(() => ({ friend: !document.getElementById('friend').hidden, name: document.getElementById('friend-name').textContent, robots: document.querySelector('meta[name=robots]').content, og: document.querySelector('meta[property="og:image"]').content }));
   check('친구 링크: 일주 배지·noindex·일주 OG', v.friend && v.name === '경진일주' && /noindex/.test(v.robots) && /gyeong-jin\.png$/.test(v.og), JSON.stringify(v));
+  await ctx.close();
+}
+
+// 8) 다시 온 사람: 입력란이 먼저 뜨고 저장된 생일이 채워져 있다; 결과 위 '생일 바꾸기'로 입력란에 돌아간다
+{
+  const { ctx, p } = await page('ok');
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.waitForTimeout(800);
+  const first = await p.evaluate(() => ({ intro: !document.getElementById('intro').hidden, result: !document.getElementById('result').hidden, birth: document.getElementById('birth').value }));
+  check('다시 온 사람: 입력란부터, 생일은 채워짐', first.intro && !first.result && first.birth === '20050315', JSON.stringify(first));
+  await p.click('#go');
+  await p.waitForTimeout(2500);
+  const who = await p.evaluate(() => document.getElementById('who-birth').textContent);
+  await p.click('#change');
+  await p.waitForTimeout(300);
+  const back = await p.evaluate(() => ({ intro: !document.getElementById('intro').hidden, result: !document.getElementById('result').hidden }));
+  check('생일 바꾸기: 결과 위 생일 표시, 누르면 입력란으로', /2005\.03\.15/.test(who) && back.intro && !back.result, `${who} ${JSON.stringify(back)}`);
   await ctx.close();
 }
 
