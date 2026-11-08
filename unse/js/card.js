@@ -362,3 +362,134 @@ export function renderOg(me, tagline) {
   }
   return c;
 }
+
+// --- 궁합 카드 -------------------------------------------------------------------------
+export function compatTexts(c, a, b) {
+  return [c.label, String(c.score), ...c.short.flat(), `${a.day.name}일주 ${a.day.colorWord} ${a.day.animal}`, `${b.day.name}일주 ${b.day.colorWord} ${b.day.animal}`, '우리 궁합 점 나 상대 너희도 궁합 봐 ↓ 사주 궁합', SITE, '@1px.society'];
+}
+
+function drawCompatFeed(ctx, c, a, b, withBackground = true) {
+  const W = 1080, H = 1350;
+  if (withBackground) background(ctx, W, H, 1, a.day.index * 61 + b.day.index);
+  const M = 54;
+  sticker(ctx, M, M, W - M * 2 - 10, H - M * 2 - 10, 48, 'rgba(255,255,255,0.93)', 12, 6);
+  const L = M + 52, R = W - M - 62, CX = (L + R) / 2;
+
+  ctx.fillStyle = INK;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  ctx.font = `700 44px ${PIXEL}`;
+  ctx.fillText('우리 궁합', L, M + 96);
+  ctx.font = `400 30px ${PIXEL}`;
+  ctx.textAlign = 'right';
+  ctx.fillText('사주 궁합', R, M + 94);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#cfc7e6';
+  for (let x = L; x < R; x += 20) ctx.fillRect(x, M + 124, 10, 6);
+
+  // 두 사람 배지와 하트
+  const disc = 220, dy = M + 170;
+  const people = [[a, CX - 230], [b, CX + 230]];
+  for (const [p, x] of people) {
+    const pal = PALETTES[p.day.element];
+    ctx.fillStyle = pal.l;
+    ctx.beginPath();
+    ctx.arc(x, dy + disc / 2, disc / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    drawSprite(ctx, p.day.branch, p.day.element, x - 88, dy + disc / 2 - 84, 11);
+    ctx.fillStyle = INK;
+    ctx.textAlign = 'center';
+    ctx.font = `700 40px ${PIXEL}`;
+    ctx.fillText(`${p.day.name}일주`, x, dy + disc + 58);
+    ctx.font = `700 28px ${SANS}`;
+    ctx.fillStyle = '#6b6488';
+    ctx.fillText(`${p.day.colorWord} ${p.day.animal}`, x, dy + disc + 98);
+  }
+  // 가운데 하트(픽셀)
+  const heart = ['.xx.xx.', 'xxxxxxx', 'xxxxxxx', '.xxxxx.', '..xxx..', '...x...'];
+  ctx.fillStyle = '#ff5c8a';
+  heart.forEach((row, r) => [...row].forEach((ch, k) => { if (ch === 'x') ctx.fillRect(CX - 42 + k * 12, dy + disc / 2 - 36 + r * 12, 12, 12); }));
+
+  // 점수
+  const sy = dy + disc + 140;
+  ctx.textAlign = 'left';
+  ctx.font = `700 150px ${PIXEL}`;
+  const nw = ctx.measureText(String(c.score)).width;
+  ctx.font = `700 44px ${PIXEL}`;
+  const uw = ctx.measureText('점').width;
+  const sx = CX - (nw + 10 + uw) / 2;
+  ctx.fillStyle = INK;
+  ctx.font = `700 150px ${PIXEL}`;
+  ctx.fillText(String(c.score), sx, sy + 130);
+  ctx.font = `700 44px ${PIXEL}`;
+  ctx.fillText('점', sx + nw + 10, sy + 126);
+  ctx.font = `700 34px ${PIXEL}`;
+  const lw = ctx.measureText(c.label).width + 44;
+  sticker(ctx, CX - lw / 2, sy + 156, lw, 60, 30, '#ffe27a', 5, 4);
+  ctx.fillStyle = INK;
+  ctx.textAlign = 'center';
+  ctx.fillText(c.label, CX, sy + 198);
+  ctx.textAlign = 'left';
+
+  // 항목 네 줄
+  let y = sy + 250;
+  for (const [title, text] of c.short) {
+    ctx.fillStyle = '#f4f0ff';
+    roundRect(ctx, L - 6, y, R - L + 12, 72, 20);
+    ctx.fill();
+    ctx.fillStyle = INK;
+    ctx.font = `700 28px ${PIXEL}`;
+    ctx.fillText(title, L + 20, y + 46);
+    ctx.font = `600 29px ${SANS}`;
+    ctx.fillText(wrap(ctx, text, R - L - 150, 1)[0], L + 130, y + 46);
+    y += 82;
+  }
+
+  const fy = H - M - 10 - 56;
+  drawLogo(ctx, L - 6, fy - 30, 5);
+  ctx.fillStyle = INK;
+  ctx.font = `700 26px ${PIXEL}`;
+  ctx.fillText('@1px.society', L + 52, fy);
+  ctx.textAlign = 'right';
+  ctx.font = `400 24px ${PIXEL}`;
+  ctx.fillStyle = '#6b6488';
+  ctx.fillText(SITE, R, fy);
+  ctx.textAlign = 'left';
+}
+
+export function renderCompatCard(c, a, b, format = 'feed') {
+  const cv = document.createElement('canvas');
+  cv.width = 1080;
+  if (format === 'feed') {
+    cv.height = 1350;
+    drawCompatFeed(cv.getContext('2d'), c, a, b);
+    return cv;
+  }
+  cv.height = 1920;
+  const ctx = cv.getContext('2d');
+  background(ctx, 1080, 1920, 1, a.day.index * 97 + b.day.index);
+  ctx.fillStyle = INK;
+  ctx.textAlign = 'center';
+  ctx.font = `700 54px ${PIXEL}`;
+  ctx.fillText('♥ 우리 궁합 ♥', 540, 190);
+  const feed = document.createElement('canvas');
+  feed.width = 1080;
+  feed.height = 1350;
+  drawCompatFeed(feed.getContext('2d'), c, a, b, false);
+  ctx.save();
+  ctx.translate(54, 250);
+  ctx.scale(0.9, 0.9);
+  ctx.drawImage(feed, 0, 0);
+  ctx.restore();
+  ctx.fillStyle = INK;
+  ctx.font = `700 40px ${PIXEL}`;
+  ctx.fillText('너희도 궁합 봐 ↓', 540, 1560);
+  ctx.font = `400 32px ${PIXEL}`;
+  ctx.fillStyle = '#4b4468';
+  ctx.fillText(SITE, 540, 1612);
+  ctx.textAlign = 'left';
+  return cv;
+}

@@ -231,10 +231,19 @@ export function compat(a, b) {
   const zPts = { good: 10, none: 7, wonjin: 4, clash: 3 }[zodiac];
   const score = clamp(stemPts + brPts + fill + zPts + 10, 35, 99);
   const label = COMPAT_LABEL.find(([min]) => score >= min)[1];
+  const STEM_SHORT = { combine: '천간합 · 첫눈에 끌리는 사이', feed: '상생 · 챙겨 주고 기대는 사이', same: '비화 · 친구 같은 사이', clash: '상극 · 끌리지만 부딪히는 사이' };
+  const BRANCH_SHORT = { harmony: '육합 · 생활 리듬이 찰떡', trio: '삼합 · 같은 목표를 향한 팀', clash: '충 · 생활 습관이 정반대', punish: '형 · 서로 말투 조심', wonjin: '원진 · 괜히 서운한 순간 주의', none: '무난 · 추억이 궁합을 키워요' };
+  const ZODIAC_SHORT = { good: '서로 끌어 주는 사이', clash: '정반대라 배울 게 많은 사이', wonjin: '미워도 금방 풀리는 사이', none: '무난한 사이' };
   const elName = ['나무', '불', '흙', '쇠', '물'];
   return {
     score,
     label,
+    short: [
+      ['성격', STEM_SHORT[stemType]],
+      ['생활', BRANCH_SHORT[br]],
+      ['채움', giveA + giveB >= 3 ? `서로에게 필요한 기운 ${giveA + giveB}개 · 빈자리를 채워 줘요` : giveA + giveB >= 1 ? `서로에게 필요한 기운 ${giveA + giveB}개 · 한쪽이 더 채워 줘요` : '닮은 기운끼리 · 함께 만드는 습관이 중요해요'],
+      ['띠', `${ANIMALS[ya]}띠 × ${ANIMALS[yb]}띠 · ${ZODIAC_SHORT[zodiac]}`],
+    ],
     sections: [
       { title: '성격 궁합 (일간)', text: COMPAT_STEM[stemType] },
       { title: '생활 궁합 (일지)', text: COMPAT_BRANCH[br] },

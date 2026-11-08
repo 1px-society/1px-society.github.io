@@ -25,16 +25,26 @@
 | `unse/app.min.js` | 위 파일을 묶은 번들(esbuild). 페이지는 이것만 읽는다 |
 | `unse/js/sprites.js` | 12지 동물 픽셀 아트(16×16), 오행 색 |
 | `unse/vendor/korean-lunar-calendar.mjs` | 음력→양력(한국천문연구원 기준, MIT) |
-| `unse/fonts/` | Galmuri11(SIL OFL 1.1). 본문은 Pretendard(jsDelivr) |
+| `unse/fonts/` | Galmuri11(SIL OFL 1.1)을 사이트 글자만 남겨 줄인 것(원본은 `tools/fonts-src/`). 본문은 Pretendard(jsDelivr) |
 
-친구 링크(`/unse/r/<일주>/`)는 일주 배지만 보여 준다. 생일이 드러나지 않게 원국은 링크와 공유 이미지에 넣지 않는다.
+친구 링크(`/unse/r/<일주>/`)는 일주 배지만 보여 준다. 생일이 드러나지 않게 원국은 링크와 공유 이미지(오늘의 운세 카드, 궁합 카드)에 넣지 않는다.
+
+## 검색·배포
+
+- `unse/index.html`: 제목·설명·키워드, OG, JSON-LD(WebApplication, FAQPage), 보이는 소개·FAQ 본문, manifest.
+- `robots.txt`(/tools/, /unse/r/ 제외), `sitemap.xml`(빌드가 날짜를 넣는다), `404.html`(→ /unse/).
+- 친구 링크 페이지 60개는 `noindex, follow`.
+- 빌드가 index.html의 `app.min.js`·`app.css`·`fonts.css` 참조에 내용 해시(`?v=`)를 붙여, 배포 뒤 옛 파일이 남지 않게 한다.
+- 검색 등록(사용자 계정 필요): Google Search Console, 네이버 서치어드바이저에 사이트를 등록하고 sitemap.xml을 제출한다. 확인 메타 태그는 `unse/index.html` 머리에 넣는다.
+- main에는 PR로 반영한다(GitHub Pages가 main의 루트를 띄운다). 이 레포의 push는 hoon0601의 gh 인증을 쓴다(`git config --local credential...`).
 
 ## 명령
 
 ```bash
 npm install            # 검증·빌드 도구(lunar-javascript, korean-lunar-calendar, playwright-core)
 npm run verify         # 일주와 연·월·시주를 두 라이브러리와 비교(1950~2050년)
-npm run build          # 번들(unse/app.min.js), unse/og/*.png, unse/r/<일주>/index.html 생성(Chrome 필요)
+npm run build          # 번들(unse/app.min.js), unse/og/*.png, unse/r/<일주>/index.html, sitemap.xml, ?v= 해시(Chrome 필요)
+PYFTSUBSET=<pyftsubset 경로> npm run build   # 폰트도 다시 줄일 때(fonttools)
 node tools/serve.mjs   # http://127.0.0.1:4810/unse/
 node tools/shot.mjs /unse/ out.png 390 844 tools/flow.json   # 휴대폰 크기 스크린샷
 ```
