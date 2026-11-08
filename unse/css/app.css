@@ -214,3 +214,4 @@ body {
 .about details { border-top: 1px solid var(--line); padding: 10px 0; }
 .about summary { cursor: pointer; font-weight: 700; font-size: 14px; }
 .about details p { margin: 8px 0 0; }
+.sheet-text { width: 100%; min-height: 140px; font: 15px/1.6 var(--sans); color: var(--ink); border: 2px solid var(--line); border-radius: 12px; padding: 12px; resize: none; -webkit-user-select: text; user-select: text; }

@@ -145,41 +145,85 @@ function fileName(kind, format) {
   const [y, m, d] = state.reading.date;
   return `1px-${kind === 'compat' ? 'gunghap' : 'unse'}-${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}-${format}.png`;
 }
-async function openSheet(kind, format) {
-  const img = await image(kind, format);
+// 공유 이미지는 결과가 나오자마자 미리 만들어 둔다. 공유창(navigator.share)은 누른 그 순간에 불러야 해서
+// (아이폰 사파리는 기다렸다가 부르면 사용자가 누른 것으로 보지 않는다), 버튼을 누른 뒤에는 기다리지 않는다.
+function prepareImages(kind) {
+  for (const format of ['story', 'feed']) image(kind, format).catch(() => {});
+}
+
+function showSheetImage(img, kind, format) {
+  $('sheet-title').textContent = '이미지를 꾹 눌러서 저장해 줘';
+  $('sheet-img').hidden = false;
+  $('sheet-text').hidden = true;
+  $('download').hidden = false;
   $('sheet-img').src = img.url;
   $('download').href = img.url;
   $('download').download = fileName(kind, format);
   $('sheet').hidden = false;
 }
-async function shareImage(kind, format) {
-  const img = await image(kind, format);
-  const file = new File([img.blob], fileName(kind, format), { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file] }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
-  }
-  await openSheet(kind, format);
+function openSheet(kind, format) {
+  const ready = state.images[`${kind}:${format}`];
+  if (ready) showSheetImage(ready, kind, format);
+  else image(kind, format).then((img) => showSheetImage(img, kind, format));
 }
-async function shareLink() {
+// 복사가 막힌 브라우저: 글을 띄워 길게 눌러 복사하게 한다
+function showSheetText(text) {
+  $('sheet-title').textContent = '꾹 눌러서 복사해 줘';
+  $('sheet-img').hidden = true;
+  $('download').hidden = true;
+  const ta = $('sheet-text');
+  ta.hidden = false;
+  ta.value = text;
+  $('sheet').hidden = false;
+  ta.focus();
+  ta.setSelectionRange(0, text.length);
+}
+
+function shareImage(kind, format) {
+  const img = state.images[`${kind}:${format}`];
+  if (!img) { openSheet(kind, format); return; }
+  const file = new File([img.blob], fileName(kind, format), { type: 'image/png' });
+  if (navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file] }).catch((e) => { if (!e || e.name !== 'AbortError') showSheetImage(img, kind, format); });
+    return;
+  }
+  showSheetImage(img, kind, format);
+}
+function shareLink() {
   const r = state.reading;
   const url = `${ORIGIN}/unse/r/${r.me.id}/`;
   const text = `나는 ${r.me.name}일주 ${r.me.colorWord} ${r.me.animal}, 오늘 ${r.score}점! 너는?`;
   if (navigator.share) {
-    try { await navigator.share({ title: '오늘의 운세 · 1px', text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+    navigator.share({ title: '오늘의 운세 · 1px', text, url }).catch((e) => { if (!e || e.name !== 'AbortError') copy(`${text}\n${url}`, '링크를 복사했어요'); });
+    return;
   }
-  await copy(`${text}\n${url}`, '링크를 복사했어요');
+  copy(`${text}\n${url}`, '링크를 복사했어요');
+}
+
+function legacyCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+  document.body.append(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }
+  ta.remove();
+  return ok;
 }
 async function copy(text, done) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast(done);
-  } catch {
-    const ta = el('textarea', { value: text });
-    document.body.append(ta);
-    ta.select();
-    try { document.execCommand('copy'); toast(done); } catch { toast('복사가 안 돼요. 길게 눌러 복사해 줘'); }
-    ta.remove();
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast(done);
+      return;
+    } catch { /* 권한이 없거나 막힘: 아래로 */ }
   }
+  if (legacyCopy(text)) { toast(done); return; }
+  showSheetText(text);
 }
 
 // --- 오늘 탭 ------------------------------------------------------------------------
@@ -251,6 +295,7 @@ function renderCompat(other) {
   state.compat = { c, other };
   delete state.images['compat:story'];
   delete state.images['compat:feed'];
+  prepareImages('compat');
   const box = $('compat-result');
   box.hidden = false;
   const fmt = (value, label) => el('button', {
@@ -362,6 +407,7 @@ async function show(birth, quick = false) {
   state.rendered = {};
   await ensureFonts(cardTexts(r));
   $('card').src = renderCard(r, 'feed').toDataURL('image/png');
+  prepareImages('today');
 
   $('intro').hidden = true;
   $('friend').hidden = true;

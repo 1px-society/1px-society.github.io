@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "verify": "node tools/verify-pillars.mjs",
-    "build": "node tools/build.mjs"
+    "build": "node tools/build.mjs",
+    "test": "node tools/test-share.mjs chromium"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
