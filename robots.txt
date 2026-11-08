@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /tools/
+Disallow: /unse/r/
+
+Sitemap: https://1px-society.github.io/sitemap.xml

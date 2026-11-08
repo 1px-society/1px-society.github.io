@@ -205,3 +205,12 @@ body {
 .compat-card { display: block; width: 100%; border-radius: 18px; margin: 16px 0 14px; }
 #compat-result .seg { margin-top: 4px; }
 #compat-result .row { margin-top: 12px; }
+
+/* 소개·FAQ */
+.about { margin-top: 28px; padding: 18px; background: rgba(255, 255, 255, 0.7); border: 2px dashed var(--line); border-radius: 20px; }
+.about h2 { margin: 0 0 10px; font: 700 16px var(--pixel); }
+.about h2 + p, .about p { font-size: 14px; line-height: 1.7; color: #3d3658; margin: 0 0 12px; }
+.about-list { margin: 0 0 18px; padding-left: 18px; font-size: 14px; line-height: 1.8; color: #3d3658; }
+.about details { border-top: 1px solid var(--line); padding: 10px 0; }
+.about summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+.about details p { margin: 8px 0 0; }

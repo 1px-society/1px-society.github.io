@@ -1,0 +1,125 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>video screens</title>
+<link rel="stylesheet" href="/unse/css/fonts.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>body{margin:0;background:#222;display:flex;flex-wrap:wrap;gap:8px;padding:8px}canvas{width:180px}</style>
+<script type="module">
+  // 영상(블록월드) 속 폰과 키오스크에 띄울 화면. 운세 페이지와 같은 픽셀 동물·폰트·색을 쓴다.
+  import { drawSprite, drawLogo, PALETTES } from '/unse/js/sprites.js';
+  import { pillarById } from '/unse/js/saju.js';
+  const INK = '#2a2440';
+  const PIXEL = '"Galmuri11", "Pretendard Variable", monospace';
+  const SANS = '"Pretendard Variable", Pretendard, sans-serif';
+  const W = 560, H = 1080;   // 폰 화면 비율(0.15 × 0.29 m)
+
+  function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function wrap(ctx, text, max) {
+    const out = []; let line = '';
+    for (const word of text.split(' ')) { const t = line ? `${line} ${word}` : word; if (ctx.measureText(t).width <= max) line = t; else { if (line) out.push(line); line = word; } }
+    if (line) out.push(line); return out;
+  }
+  function bg(ctx) {
+    const g = ctx.createLinearGradient(0, 0, W * 0.4, H); g.addColorStop(0, '#eeeafb'); g.addColorStop(1, '#ffd8e8');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  function statusBar(ctx, time) {
+    ctx.fillStyle = INK; ctx.font = `700 26px ${SANS}`; ctx.textAlign = 'left'; ctx.fillText(time, 34, 46);
+    ctx.textAlign = 'right'; ctx.fillText('▮▮▮ 92%', W - 30, 46); ctx.textAlign = 'left';
+  }
+
+  // 운세 카드 화면: state = 'card' | 'locked' | 'done'
+  function cardScreen({ time, date, mission, item, color, colorHex, number, state }) {
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d');
+    bg(ctx); statusBar(ctx, time);
+    drawLogo(ctx, 30, 74, 4.4);
+    ctx.fillStyle = INK; ctx.font = `700 34px ${PIXEL}`; ctx.fillText('오늘의 운세', 84, 108);
+    ctx.font = `400 22px ${PIXEL}`; ctx.fillStyle = '#6b6488'; ctx.textAlign = 'right'; ctx.fillText(date, W - 30, 106); ctx.textAlign = 'left';
+    // 카드
+    ctx.fillStyle = INK; rr(ctx, 34, 146, W - 60, H - 320, 34); ctx.fill();
+    ctx.fillStyle = '#ffffff'; rr(ctx, 26, 138, W - 60, H - 320, 34); ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+    const me = pillarById('gyeong-jin'); const pal = PALETTES[me.element];
+    ctx.fillStyle = pal.l; ctx.beginPath(); ctx.arc(110, 236, 66, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+    drawSprite(ctx, me.branch, me.element, 110 - 56, 236 - 54, 7);
+    ctx.fillStyle = INK; ctx.font = `700 38px ${PIXEL}`; ctx.fillText('경진일주', 196, 226);
+    ctx.font = `700 28px ${SANS}`; ctx.fillStyle = '#6b6488'; ctx.fillText('하얀 용', 198, 266);
+    // 오늘의 한 줄(크게)
+    ctx.fillStyle = INK; ctx.font = `800 56px ${SANS}`;
+    const lines = wrap(ctx, `“${mission}”`, W - 120);
+    let y = 380 + (lines.length === 1 ? 30 : 0);
+    for (const l of lines) { ctx.fillText(l, 60, y); y += 70; }
+    // 행운 세 줄
+    const rows = [['행운 아이템', item], ['행운 컬러', color, colorHex], ['행운 숫자', String(number)]];
+    let ry = 610;
+    for (const [k, v, hex] of rows) {
+      ctx.fillStyle = '#f4f0ff'; rr(ctx, 52, ry, W - 112, 92, 20); ctx.fill();
+      ctx.fillStyle = '#6b6488'; ctx.font = `700 26px ${PIXEL}`; ctx.fillText(k, 76, ry + 56);
+      let vx = 280;
+      if (hex) { ctx.fillStyle = hex; ctx.fillRect(vx, ry + 26, 40, 40); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(vx, ry + 26, 40, 40); vx += 54; }
+      ctx.fillStyle = INK; ctx.font = `800 40px ${SANS}`; ctx.fillText(v, vx, ry + 60);
+      ry += 106;
+    }
+    // 아래 띠
+    if (state !== 'card') {
+      const done = state === 'done';
+      ctx.fillStyle = done ? '#22b07d' : '#e8455a'; rr(ctx, 26, H - 152, W - 52, 104, 26); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.font = `700 36px ${PIXEL}`; ctx.textAlign = 'center';
+      ctx.fillText(done ? '오늘의 운세 완료 ✓' : '아직 완료되지 않았습니다', W / 2, H - 88); ctx.textAlign = 'left';
+    } else {
+      ctx.fillStyle = '#6b6488'; ctx.font = `400 24px ${PIXEL}`; ctx.textAlign = 'center';
+      ctx.fillText('운세를 끝내면 폰이 열려요', W / 2, H - 90); ctx.textAlign = 'left';
+    }
+    return c;
+  }
+
+  // 홈 화면(앱 아이콘을 그린 격자, 이모지 없음)
+  function homeScreen(time) {
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9ad9ff'); g.addColorStop(1, '#c9a6ff'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff'; ctx.font = `700 26px ${SANS}`; ctx.fillText(time, 34, 46);
+    ctx.font = `700 120px ${SANS}`; ctx.textAlign = 'center'; ctx.fillText(time, W / 2, 230); ctx.font = `600 30px ${SANS}`; ctx.fillText('11월 14일 토요일', W / 2, 280); ctx.textAlign = 'left';
+    const apps = [['메시지', '#ffd400'], ['전화', '#34c759'], ['카메라', '#8e8e93'], ['사진', '#ff9f0a'], ['지도', '#30b0c7'], ['음악', '#ff375f'], ['캘린더', '#ffffff'], ['운세', '#ff5c8a']];
+    apps.forEach(([name, col], i) => {
+      const x = 52 + (i % 4) * 120, y = 380 + Math.floor(i / 4) * 170;
+      ctx.fillStyle = col; rr(ctx, x, y, 96, 96, 24); ctx.fill();
+      ctx.fillStyle = 'rgba(42,36,64,0.85)'; ctx.fillRect(x + 32, y + 32, 32, 32);
+      ctx.fillStyle = '#ffffff'; ctx.font = `600 22px ${SANS}`; ctx.textAlign = 'center'; ctx.fillText(name, x + 48, y + 128); ctx.textAlign = 'left';
+    });
+    return c;
+  }
+
+  // 식당 대기 키오스크(세로)
+  function kiosk(state) {
+    const KW = 600, KH = 900; const c = document.createElement('canvas'); c.width = KW; c.height = KH; const ctx = c.getContext('2d');
+    ctx.fillStyle = '#1f2433'; ctx.fillRect(0, 0, KW, KH);
+    ctx.fillStyle = '#ffffff'; ctx.font = `800 54px ${SANS}`; ctx.textAlign = 'center'; ctx.fillText('대기 등록', KW / 2, 110);
+    ctx.font = `600 30px ${SANS}`; ctx.fillStyle = '#9aa3b8'; ctx.fillText('현재 대기 4팀', KW / 2, 160);
+    ctx.fillStyle = '#ffffff'; rr(ctx, 50, 220, KW - 100, 420, 30); ctx.fill();
+    if (state === 'entered') {
+      ctx.fillStyle = '#1f2433'; ctx.font = `600 34px ${SANS}`; ctx.fillText('대기 번호 23', KW / 2, 310);
+      ctx.font = `800 92px ${SANS}`; ctx.fillText('혜진 외 1명', KW / 2, 450);
+      ctx.font = `600 32px ${SANS}`; ctx.fillStyle = '#e8455a'; ctx.fillText('요청: 양파 빼 주세요', KW / 2, 560);
+    } else {
+      ctx.fillStyle = '#9aa3b8'; ctx.font = `600 40px ${SANS}`; ctx.fillText('이름을 입력해 주세요', KW / 2, 440);
+    }
+    ctx.fillStyle = '#ff7a3d'; rr(ctx, 50, 700, KW - 100, 120, 30); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.font = `800 46px ${SANS}`; ctx.fillText(state === 'entered' ? '등록 완료' : '등록하기', KW / 2, 778);
+    ctx.textAlign = 'left';
+    return c;
+  }
+
+  const days = {
+    d1: { time: '07:10', date: '11월 12일 수요일', mission: '미룬 약속 잡기', item: '운동화', color: '파랑', colorHex: '#2d6bff', number: 2 },
+    d2: { time: '07:10', date: '11월 13일 목요일', mission: '고마운 마음은 먼저 건네보세요', item: '캔커피', color: '크림', colorHex: '#f3e7c9', number: 1 },
+    d3: { time: '11:20', date: '11월 14일 토요일', mission: '약속보다 먼저 도착하면 답이 보여요', item: '우산', color: '초록', colorHex: '#3cb371', number: 20 },
+  };
+  const texts = Object.values(days).map((d) => Object.values(d).join(' ')).join(' ') + ' 오늘의 운세 경진일주 하얀 용 행운 아이템 컬러 숫자 아직 완료되지 않았습니다 오늘의 운세 완료 ✓ 운세를 끝내면 폰이 열려요 대기 등록 현재 대기 4팀 대기 번호 23 혜진 외 1명 요청: 양파 빼 주세요 등록 완료 등록하기 이름을 입력해 주세요 메시지 전화 카메라 사진 지도 음악 캘린더 운세 11월 14일 토요일 11:40 0123456789';
+  await Promise.all([document.fonts.load(`800 56px "Pretendard Variable"`, texts), document.fonts.load(`700 34px Galmuri11`, texts), document.fonts.load(`400 24px Galmuri11`, texts)]);
+  const out = {};
+  for (const [k, d] of Object.entries(days)) for (const s of ['card', 'locked', 'done']) out[`fortune_${k}_${s}`] = cardScreen({ ...d, state: s });
+  out.home = homeScreen('11:40');
+  out.kiosk_blank = kiosk('blank');
+  out.kiosk_entered = kiosk('entered');
+  window.SCREENS = Object.fromEntries(Object.entries(out).map(([k, cv]) => { document.body.append(cv); return [k, cv.toDataURL('image/png')]; }));
+  document.body.dataset.ready = '1';
+</script>
