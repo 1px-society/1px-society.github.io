@@ -1,12 +1,12 @@
-// 공유·복사 동작 시험: node tools/test-share.mjs [chromium|webkit]
+// 공유·복사 동작 시험: node tools/test-share.mjs [chromium|webkit]   (BASE=https://1px-society.github.io 로 실제 사이트)
 // 실제 기기의 공유창은 띄울 수 없어서 navigator.share / clipboard를 흉내 내고, 버튼마다 무엇이 불리는지 본다.
 import { chromium, webkit } from 'playwright-core';
 import { serve } from './serve.mjs';
 
 const engine = process.argv[2] || 'chromium';
-const server = await serve(4814);
+const server = process.env.BASE ? null : await serve(4814);
 const browser = engine === 'webkit' ? await webkit.launch() : await chromium.launch({ channel: 'chrome' });
-const BASE = 'http://127.0.0.1:4814';
+const BASE = process.env.BASE || 'http://127.0.0.1:4814';
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: !!ok, detail });
 
@@ -144,7 +144,7 @@ const toastText = (p) => p.evaluate(() => document.getElementById('toast').class
 }
 
 await browser.close();
-server.close();
+if (server) server.close();
 let fail = 0;
 for (const r of results) {
   if (!r.ok) fail++;
