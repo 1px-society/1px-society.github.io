@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>친구는 갑술일주 · 푸른 개 | 오늘의 운세</title>
+<meta name="description" content="친구는 갑술일주 · 푸른 개 — 의리 있는 정의파 리더. 생일 하나로 나의 일주와 오늘의 운세를 봐.">
+<meta name="theme-color" content="#f3ecff">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="1px · 오늘의 운세">
+<meta property="og:title" content="친구는 갑술일주 · 푸른 개">
+<meta property="og:description" content="의리 있는 정의파 리더 · 너는 무슨 일주야? 오늘 운세 보기">
+<meta property="og:image" content="https://1px-society.github.io/unse/og/gap-sul.png">
+<meta property="og:url" content="https://1px-society.github.io/unse/r/gap-sul/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://1px-society.github.io/unse/r/gap-sul/">
+<link rel="icon" href="/unse/og/icon.png">
+<link rel="apple-touch-icon" href="/unse/og/icon.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/unse/css/fonts.css">
+<link rel="stylesheet" href="/unse/css/app.css">
+<script type="module" src="/unse/js/app.js"></script>
+</head>
+<body data-friend="gap-sul">
+<div class="sky" aria-hidden="true"></div>
+<main class="wrap">
+  <header class="top">
+    <a class="brand" href="https://www.instagram.com/1px.society/" target="_blank" rel="noopener"><canvas id="logo" width="40" height="40" aria-hidden="true"></canvas><span>1px</span></a>
+    <span class="today" id="today"></span>
+  </header>
+
+  <section id="friend" class="friend" hidden>
+    <p class="friend-kicker">친구의 일주는</p>
+    <div class="friend-badge"><canvas id="friend-sprite" width="96" height="96" aria-hidden="true"></canvas><div><strong id="friend-name"></strong><span id="friend-tag"></span></div></div>
+    <img id="friend-card" class="friend-card" alt="친구의 오늘 운세 카드" hidden>
+    <a class="btn btn-main" href="#intro">나도 오늘 운세 보기</a>
+  </section>
+
+  <section id="intro" class="intro">
+    <h1 class="title">오늘의<br>운세</h1>
+    <p class="lead">생일 하나로 보는 <b>나의 일주</b>와 오늘 하루</p>
+
+    <form id="form" class="panel" novalidate>
+      <div class="seg" role="radiogroup" aria-label="달력">
+        <button type="button" class="seg-btn on" data-cal="solar" role="radio" aria-checked="true">양력</button>
+        <button type="button" class="seg-btn" data-cal="lunar" role="radio" aria-checked="false">음력</button>
+      </div>
+      <label class="field">
+        <span class="field-label">생년월일 8자리</span>
+        <input id="birth" name="birth" inputmode="numeric" autocomplete="bday" maxlength="10" placeholder="20050315" aria-describedby="birth-help">
+      </label>
+      <p id="birth-help" class="help">예) 2005년 3월 15일 → 20050315</p>
+      <label class="check" id="leap-row" hidden><input type="checkbox" id="leap"> 윤달이에요</label>
+      <label class="check"><input type="checkbox" id="late"> 밤 11시 반~자정 사이에 태어났어요</label>
+      <p id="error" class="error" role="alert"></p>
+      <button class="btn btn-main" id="go" type="submit">오늘 운세 뽑기 ✦</button>
+      <p class="privacy">생일은 이 폰에만 저장돼요. 어디로도 보내지 않아요.</p>
+    </form>
+
+    <button id="again" class="btn btn-ghost" type="button" hidden></button>
+  </section>
+
+  <section id="stage" class="stage" hidden>
+    <div class="flip" id="flip">
+      <div class="face back"><canvas id="back-logo" width="160" height="160" aria-hidden="true"></canvas><p>두근두근<br>오늘의 카드</p></div>
+      <div class="face front"><img id="card" alt="오늘의 운세 카드"></div>
+    </div>
+  </section>
+
+  <section id="result" class="result" hidden>
+    <div class="share panel">
+      <p class="share-title">결과 공유하기</p>
+      <div class="seg" role="radiogroup" aria-label="이미지 크기">
+        <button type="button" class="seg-btn on" data-format="story" role="radio" aria-checked="true">스토리용</button>
+        <button type="button" class="seg-btn" data-format="feed" role="radio" aria-checked="false">댓글·피드용</button>
+      </div>
+      <button class="btn btn-main" id="share" type="button">이미지로 공유하기</button>
+      <div class="row">
+        <button class="btn btn-sub" id="save" type="button">이미지 저장</button>
+        <button class="btn btn-sub" id="link" type="button">결과 링크 보내기</button>
+      </div>
+      <button class="btn btn-ghost small" id="copy" type="button">텍스트로 복사 (댓글용)</button>
+      <p class="tip" id="inapp" hidden></p>
+    </div>
+
+    <div class="panel more">
+      <h2>오늘의 흐름</h2>
+      <p id="detail"></p>
+      <p id="relation" class="soft"></p>
+      <dl class="facts">
+        <div><dt>오늘의 한마디</dt><dd id="mantra"></dd></div>
+        <div><dt>오늘 케미 좋은 띠</dt><dd id="match"></dd></div>
+        <div><dt>오늘의 기운</dt><dd id="todaypillar"></dd></div>
+      </dl>
+    </div>
+
+    <div class="panel next">
+      <p>다음 운세까지</p>
+      <p class="clock" id="clock">--:--:--</p>
+      <p class="soft">자정이 지나면 새 카드가 나와요</p>
+    </div>
+
+    <button id="reset" class="btn btn-ghost small" type="button">다른 생일로 보기</button>
+  </section>
+
+  <footer class="foot">
+    <p>만든 곳 <a href="https://www.instagram.com/1px.society/" target="_blank" rel="noopener">@1px.society</a> · <a href="https://www.youtube.com/@1px.society" target="_blank" rel="noopener">유튜브</a></p>
+    <p class="soft">재미로 보는 운세예요. 좋은 말만 골라 가져가기!</p>
+  </footer>
+</main>
+
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-box" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <p id="sheet-title" class="sheet-title">이미지를 꾹 눌러서 저장해 줘</p>
+    <img id="sheet-img" alt="공유용 운세 이미지">
+    <div class="row">
+      <a class="btn btn-sub" id="download" download="1px-unse.png">파일로 저장</a>
+      <button class="btn btn-main" id="sheet-close" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

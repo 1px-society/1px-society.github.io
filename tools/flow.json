@@ -1,0 +1,14 @@
+[
+  {"shot": "flow-1.png"},
+  {"fill": "#birth", "value": "20050315"},
+  {"click": "#go"},
+  {"wait": 400},
+  {"shot": "flow-2.png"},
+  {"wait": 2200},
+  {"eval": "({card: document.getElementById('card').naturalWidth, result: !document.getElementById('result').hidden, saved: localStorage.getItem('unse.v1')})"},
+  {"shot": "flow-3.png", "full": true},
+  {"click": "#save"},
+  {"wait": 600},
+  {"eval": "({sheet: !document.getElementById('sheet').hidden, w: document.getElementById('sheet-img').naturalWidth, h: document.getElementById('sheet-img').naturalHeight})"},
+  {"shot": "flow-4.png"}
+]

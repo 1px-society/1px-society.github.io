@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>sprites</title>
+<style>body{margin:0;padding:16px;background:#f3eefc;display:grid;grid-template-columns:repeat(6,auto);gap:12px;justify-content:start}canvas{background:#fff;border-radius:8px;image-rendering:pixelated}</style>
+<script type="module">
+  import { spriteCanvas, drawLogo } from '/unse/js/sprites.js';
+  for (let b = 0; b < 12; b++) document.body.append(spriteCanvas(b, b % 5, 8));
+  for (let e = 0; e < 5; e++) document.body.append(spriteCanvas(4, e, 8));
+  const c = document.createElement('canvas'); c.width = c.height = 128; drawLogo(c.getContext('2d'), 14, 14, 10); document.body.append(c);
+</script>
